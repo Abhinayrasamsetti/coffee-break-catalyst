@@ -2,20 +2,63 @@
 
 Two Ansible playbooks support controlled operations: evidence-first service recovery and conservative disk cleanup.
 
-## Recover one approved service
+## 1. What to install and open
+
+Use Ubuntu/WSL, a Linux jump host, or a CI runner with SSH reachability to the target hosts. Install and verify Ansible:
 
 ```bash
-ansible-playbook -i inventory.ini recover-service.yml --limit server-a -e target_service=nginx
+sudo apt update && sudo apt install -y ansible
+ansible --version
 ```
 
-The playbook captures status and the last 80 journal lines before restarting, then requires the service to be `active`.
+## 2. Store server inputs
 
-## Disk-space cleanup
+Create `inputs/inventory.ini` with a small test group first:
+
+```ini
+[recovery_targets]
+server-a ansible_host=192.0.2.10
+
+[cleanup_targets]
+server-a ansible_host=192.0.2.10
+```
+
+Use SSH keys or Ansible Vault for authentication, not passwords in this file. Confirm access:
 
 ```bash
-ansible-playbook -i inventory.ini disk-cleanup.yml --check
-ansible-playbook -i inventory.ini disk-cleanup.yml
-ansible-playbook -i inventory.ini disk-cleanup.yml -e cleanup_apply=true
+ansible -i inputs/inventory.ini all -m ping
 ```
 
-The first two commands only report candidate path sizes. The apply command removes files older than seven days from `/tmp` and `/var/tmp`, then attempts supported package cache cleanup. It does **not** delete directories, user home files, logs, databases, container images, or anything outside the explicit allowlist. Review results per host and set a maintenance window before applying.
+## 3. Recover a single approved service
+
+First run against one server in a maintenance window. This captures status and recent journal entries before restarting, then verifies the service is active:
+
+```bash
+ansible-playbook -i inputs/inventory.ini recover-service.yml --limit server-a -e target_service=nginx
+```
+
+Review the diagnostic output. Scale out only after the application health check passes.
+
+## 4. Check disk usage without deleting anything
+
+The default run only measures `/tmp` and `/var/tmp` and prints a report:
+
+```bash
+ansible-playbook -i inputs/inventory.ini disk-cleanup.yml --limit server-a
+```
+
+You can also preview Ansible's planned changes:
+
+```bash
+ansible-playbook -i inputs/inventory.ini disk-cleanup.yml --check --limit server-a
+```
+
+## 5. Trigger approved cleanup
+
+After reviewing output and obtaining approval, run the explicit apply flag on one host:
+
+```bash
+ansible-playbook -i inputs/inventory.ini disk-cleanup.yml --limit server-a -e cleanup_apply=true
+```
+
+It deletes only files older than seven days under `/tmp` and `/var/tmp`, and cleans package-manager caches where available. It never removes directories, user home files, logs, databases, or container images. Check free space with `ansible -i inputs/inventory.ini server-a -a 'df -h'` afterward.

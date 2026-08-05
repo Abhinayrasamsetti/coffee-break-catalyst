@@ -25,10 +25,11 @@ Also included: a **disk-space cleanup playbook** that reports first and removes 
 
 ## Quick start
 
-1. Read the README in the tool directory.
-2. Copy a sample input/configuration and fill in non-sensitive test data.
-3. Run its preview/report command.
-4. Review the generated report before using the apply command.
+1. Read the numbered beginner guide in the chosen tool directory.
+2. Install the listed application (PowerShell, Python, Azure CLI, kubectl, or Ansible).
+3. Store real CSVs and inventories in that tool's `inputs/` folder. Git ignores its contents to prevent accidental uploads.
+4. Copy an example input where provided, use non-sensitive test data, and run the preview/report command.
+5. Review the console/report before using an explicit apply command.
 
 ## Repository conventions
 

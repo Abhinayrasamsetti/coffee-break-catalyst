@@ -2,24 +2,44 @@
 
 Creates Active Directory accounts from a CSV and adds them to named groups. It validates required fields and refuses duplicate `SamAccountName` values.
 
-## Prerequisites
+## 1. What to install and open
 
-- Windows PowerShell 5.1+ with the ActiveDirectory module.
-- An account delegated to create users in the selected OU and edit the listed groups.
-- A CSV following [`../examples/users.csv`](../examples/users.csv).
-
-## Preview first
+Use a Windows domain-joined administration machine. Open **Windows PowerShell as Administrator** (or Windows Terminal with a PowerShell tab). Confirm the AD module is available:
 
 ```powershell
-./New-BulkAdUsers.ps1 -CsvPath ../examples/users.csv -TargetOu 'OU=Test,DC=example,DC=com' -WhatIf
+Get-Module -ListAvailable ActiveDirectory
 ```
 
-To apply, obtain the initial password from a secure secret mechanism and pass it at runtime. Do not add it to a command history, CSV, or source file.
+If this prints nothing, install RSAT using your organisation's approved software centre, then sign in with an account delegated to create users in the target OU and edit the target groups.
+
+## 2. Prepare the input file
+
+1. Copy [`../examples/users.csv`](../examples/users.csv) to `inputs/users.csv`.
+2. Open it in Excel or VS Code. Keep the header row exactly as shown.
+3. Put one user on each row. Separate multiple AD group names with a semicolon (`Group-A;Group-B`).
+4. Save as **CSV UTF-8**. Do not put passwords in the file.
+
+## 3. Run a safe preview
+
+From this folder, replace the example domain path with your test OU:
 
 ```powershell
-./New-BulkAdUsers.ps1 -CsvPath users.csv -TargetOu 'OU=NewJoiners,DC=example,DC=com' -DefaultPassword '<secure runtime value>' -RequirePasswordChange
+./New-BulkAdUsers.ps1 -CsvPath .\inputs\users.csv -TargetOu 'OU=Test,DC=example,DC=com' -WhatIf
 ```
 
-## Output and recovery
+Read the console output and the CSV created under `reports/`. Correct every `Failed` row before continuing.
 
-The CSV report records `Previewed`, `Created`, or `Failed` for every row. This tool deliberately does not delete accounts automatically; review the report and use your approved deprovisioning procedure if a rollback is needed.
+## 4. Apply the change
+
+Run in a test OU first. Get the initial password from an approved secret manager; do not save it in source control or the CSV.
+
+```powershell
+$initialPassword = Read-Host 'Initial password' -AsSecureString
+$plainPassword = [System.Net.NetworkCredential]::new('', $initialPassword).Password
+./New-BulkAdUsers.ps1 -CsvPath .\inputs\users.csv -TargetOu 'OU=NewJoiners,DC=example,DC=com' -DefaultPassword $plainPassword -RequirePasswordChange
+Remove-Variable plainPassword
+```
+
+## 5. Verify and recover
+
+Open the newest `reports/ad-onboarding-*.csv` in Excel. Check account and group membership in Active Directory Users and Computers. The tool never deletes accounts automatically; use your approved deprovisioning process for any rollback.
