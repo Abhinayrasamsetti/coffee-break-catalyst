@@ -1,0 +1,7 @@
+reports/
+*.log
+.env
+__pycache__/
+*.py[cod]
+inventory.ini
+vault.yml

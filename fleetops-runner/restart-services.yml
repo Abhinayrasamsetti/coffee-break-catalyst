@@ -1,0 +1,32 @@
+---
+- name: Safely restart selected services across Linux hosts
+  hosts: fleet
+  become: true
+  gather_facts: false
+  vars:
+    service_names: []
+  tasks:
+    - name: Require an explicit service allowlist
+      ansible.builtin.assert:
+        that: service_names | length > 0
+        fail_msg: "Pass -e 'service_names=[\"nginx\"]'; never use a blanket restart."
+
+    - name: Collect service status before change
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      loop: "{{ service_names }}"
+      changed_when: false
+      failed_when: false
+      register: before_status
+
+    - name: Restart requested services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ service_names }}"
+
+    - name: Verify each service is active
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      loop: "{{ service_names }}"
+      changed_when: false
+      register: after_status
+      failed_when: after_status.stdout != 'active'

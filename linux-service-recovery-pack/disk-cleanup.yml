@@ -1,0 +1,47 @@
+---
+- name: Report or safely clean Linux temporary and package cache files
+  hosts: cleanup_targets
+  become: true
+  gather_facts: false
+  vars:
+    cleanup_apply: false
+    cleanup_paths:
+      - /tmp
+      - /var/tmp
+  tasks:
+    - name: Measure candidate paths
+      ansible.builtin.command: "du -sh {{ item }}"
+      loop: "{{ cleanup_paths }}"
+      changed_when: false
+      failed_when: false
+      register: before_usage
+    - ansible.builtin.debug:
+        var: before_usage.results
+    - name: State report-only mode
+      ansible.builtin.debug:
+        msg: "Report-only mode: no files will be deleted. Re-run with -e cleanup_apply=true after review."
+      when: not (cleanup_apply | bool)
+    - name: Remove only files older than seven days in allowlisted temporary paths
+      ansible.builtin.find:
+        paths: "{{ item }}"
+        age: 7d
+        age_stamp: mtime
+        file_type: file
+        recurse: true
+      loop: "{{ cleanup_paths }}"
+      register: old_temp_files
+      when: cleanup_apply | bool
+    - name: Delete reviewed temporary files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_temp_files.results | map(attribute='files') | flatten }}"
+      when: cleanup_apply | bool
+    - name: Clean package-manager cache when confirmed
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - "dnf clean all"
+        - "apt-get clean"
+      changed_when: true
+      failed_when: false
+      when: cleanup_apply | bool

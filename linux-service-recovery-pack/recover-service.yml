@@ -1,0 +1,27 @@
+---
+- name: Diagnose and recover a Linux service
+  hosts: recovery_targets
+  become: true
+  gather_facts: false
+  vars:
+    target_service: ""
+  tasks:
+    - ansible.builtin.assert:
+        that: target_service | length > 0
+        fail_msg: "Pass -e target_service=<approved service>."
+    - name: Capture status and recent journal before recovery
+      ansible.builtin.shell: "systemctl status {{ target_service }} --no-pager; journalctl -u {{ target_service }} -n 80 --no-pager"
+      changed_when: false
+      failed_when: false
+      register: diagnostic
+    - ansible.builtin.debug:
+        var: diagnostic.stdout_lines
+    - name: Restart only after diagnostics are captured
+      ansible.builtin.systemd:
+        name: "{{ target_service }}"
+        state: restarted
+    - name: Verify recovery
+      ansible.builtin.command: "systemctl is-active {{ target_service }}"
+      changed_when: false
+      register: verification
+      failed_when: verification.stdout != 'active'

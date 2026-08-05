@@ -1,0 +1,2 @@
+GivenName,Surname,SamAccountName,UserPrincipalName,Department,Groups
+Asha,Patel,apatel,apatel@example.com,Engineering,"Engineering-Users;VPN-Users"
