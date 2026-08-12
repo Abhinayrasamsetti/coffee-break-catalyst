@@ -8,6 +8,7 @@ Practical, safety-first automation for routine enterprise operations. Each tool 
 | --- | --- | --- |
 | [AD Bulk Onboarder](ad-bulk-onboarder/README.md) | Validates a CSV and creates Active Directory users and group memberships | PowerShell |
 | [AD Inactive User & Group Audit](ad-inactive-user-group-audit/README.md) | Reports stale accounts and risky privileged-group memberships without changing AD | PowerShell |
+| [Architecture Diagram Builder](architecture-diagram-builder/README.md) | Browser-based Azure/Kubernetes/ServiceNow diagram editor with validation and exports | HTML / CSS / JavaScript |
 | [FleetOps Runner](fleetops-runner/README.md) | Performs bulk service restarts across Linux hosts | Ansible |
 | [ServiceNow Bulk Toolkit](servicenow-bulk-toolkit/README.md) | Previews and applies controlled incident updates from CSV | Python |
 | [Kube Coffee Check](kube-coffee-check/README.md) | Creates a concise Kubernetes cluster-health report | Python / kubectl |

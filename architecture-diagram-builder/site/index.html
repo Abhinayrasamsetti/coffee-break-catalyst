@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A browser-only enterprise architecture diagram builder." />
+    <title>Architecture Diagram Builder</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div><p class="eyebrow">Coffee Break Catalyst</p><h1>Architecture Diagram Builder</h1></div>
+      <div class="header-actions">
+        <button id="newDiagram" class="button ghost">New</button>
+        <button id="saveDiagram" class="button ghost">Save locally</button>
+        <button id="loadDiagram" class="button ghost">Load local</button>
+        <button id="exportJson" class="button ghost">Export JSON</button>
+        <label class="button ghost file-button">Import JSON<input id="importJson" type="file" accept="application/json" /></label>
+        <button id="exportSvg" class="button ghost">Export SVG</button>
+        <button id="exportPng" class="button primary">Export PNG</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar palette-panel">
+        <h2>Components</h2>
+        <p class="hint">Drag a component to the canvas.</p>
+        <div id="palette" class="palette"></div>
+        <h2>Templates</h2>
+        <button class="template-button" data-template="aiops">AIOps control center</button>
+        <button class="template-button" data-template="aks">AKS application platform</button>
+        <button class="template-button" data-template="landing">Azure landing zone</button>
+      </aside>
+
+      <section class="editor-panel">
+        <div class="toolbar">
+          <label>Diagram name <input id="diagramName" value="Untitled architecture" /></label>
+          <button id="connectMode" class="button ghost" aria-pressed="false">Connect components</button>
+          <button id="impactMode" class="button ghost" aria-pressed="false">Impact mode</button>
+          <button id="autoLayout" class="button ghost">Auto layout</button>
+          <button id="validateDiagram" class="button ghost">Validate</button>
+          <button id="deleteSelected" class="button danger">Delete selected</button>
+        </div>
+        <div id="canvas" class="canvas" aria-label="Architecture diagram canvas">
+          <svg id="edges" class="edges" aria-hidden="true"></svg>
+          <div id="nodes" class="nodes"></div>
+          <p id="canvasEmpty" class="canvas-empty">Drag components here, or start with a template.</p>
+        </div>
+        <div id="status" class="status" role="status">Ready. Your diagram is stored only in this browser until you export or save it.</div>
+      </section>
+
+      <aside class="sidebar inspector-panel">
+        <h2>Inspector</h2>
+        <div id="inspectorEmpty" class="hint">Select a component to edit it.</div>
+        <form id="inspector" hidden>
+          <label>Component name <input id="nodeLabel" required /></label>
+          <label>Type <input id="nodeType" disabled /></label>
+          <label>Environment <select id="nodeEnvironment"><option>Production</option><option>Non-production</option><option>Shared</option><option>External</option></select></label>
+          <label>Owner <input id="nodeOwner" placeholder="Platform team" /></label>
+          <label>Description <textarea id="nodeDescription" rows="4" placeholder="Purpose or implementation note"></textarea></label>
+          <label>Data flow label <input id="edgeLabel" placeholder="e.g. REST API / OAuth 2.0" /></label>
+          <p class="hint">Data-flow label applies when connecting this component to the next selected component.</p>
+        </form>
+        <h2>Validation</h2>
+        <div id="validationResults" class="validation-results"><p class="hint">Run validation to check common architecture gaps.</p></div>
+        <h2>Impact</h2>
+        <div id="impactResults" class="impact-results"><p class="hint">Enable impact mode, then select a component.</p></div>
+      </aside>
+    </main>
+    <footer>Browser-only demo. No infrastructure credentials or diagram data leave your browser.</footer>
+    <script src="app.js"></script>
+  </body>
+</html>
