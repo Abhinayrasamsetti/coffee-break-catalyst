@@ -1,58 +1,29 @@
-/* =========================================================
-   COFFEE BREAK CATALYST
-   ARCHITECTURE DIAGRAM BUILDER
-   ========================================================= */
-
-
-/* =========================================================
-   ROOT VARIABLES
-   ========================================================= */
-
 :root {
   color-scheme: light;
 
   --bg: #f5f7fb;
   --panel: #ffffff;
-  --panel-soft: #f8fafc;
-
-  --canvas: #eef2f7;
-  --canvas-grid: #d8dee9;
+  --canvas: #eef2f8;
 
   --ink: #172033;
-  --ink-soft: #334155;
-  --muted: #64748b;
-
-  --line: #d8dee9;
-  --line-dark: #b8c2d3;
+  --muted: #657087;
+  --line: #d9dfeb;
 
   --brand: #2764f0;
   --brand-soft: #eaf0ff;
-  --brand-border: #9db6ff;
 
-  --success: #2e9d62;
-  --warning: #d98a18;
   --danger: #c03838;
+  --warning: #e09b27;
+  --success: #2e9d62;
 
-  --selection: #2764f0;
+  --shadow-sm: 0 2px 8px rgba(24, 36, 58, 0.08);
+  --shadow-md: 0 5px 18px rgba(24, 36, 58, 0.12);
 
-  --shadow-sm:
-    0 1px 3px rgba(15, 23, 42, 0.08);
-
-  --shadow-md:
-    0 4px 16px rgba(15, 23, 42, 0.10);
-
-  --shadow-lg:
-    0 10px 35px rgba(15, 23, 42, 0.16);
-
-  --sidebar-width: 235px;
-  --inspector-width: 285px;
-  --header-height: 72px;
-  --footer-height: 28px;
+  --toolbar-height: 52px;
 }
 
-
 /* =========================================================
-   RESET
+   GLOBAL
    ========================================================= */
 
 * {
@@ -67,6 +38,7 @@ body {
 
 body {
   margin: 0;
+  overflow: hidden;
 
   background: var(--bg);
   color: var(--ink);
@@ -82,8 +54,6 @@ body {
 
   font-size: 14px;
   line-height: 1.45;
-
-  overflow: hidden;
 }
 
 button,
@@ -97,21 +67,25 @@ button {
   user-select: none;
 }
 
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 1px;
+h1,
+h2,
+h3,
+p {
+  margin: 0;
 }
 
+.hidden {
+  display: none !important;
+}
 
 /* =========================================================
-   APPLICATION HEADER
+   HEADER
    ========================================================= */
 
 .app-header {
-  height: var(--header-height);
+  min-height: 76px;
+
+  padding: 13px 20px;
 
   display: flex;
   align-items: center;
@@ -119,134 +93,71 @@ select:focus-visible {
 
   gap: 20px;
 
-  padding: 10px 18px;
-
   background: var(--panel);
-
   border-bottom: 1px solid var(--line);
 
-  box-shadow: var(--shadow-sm);
-
   position: relative;
-
   z-index: 100;
 }
 
-
-/* =========================================================
-   BRAND
-   ========================================================= */
-
-.brand-area {
-  min-width: 0;
-
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
+.app-title {
+  min-width: 220px;
 }
 
-.brand-eyebrow {
+.eyebrow {
+  margin-bottom: 2px;
+
   color: var(--brand);
 
   font-size: 11px;
   font-weight: 800;
 
-  letter-spacing: 0.09em;
-
-  white-space: nowrap;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.brand-area h1 {
-  margin: 0;
-
-  font-size: 17px;
+h1 {
+  font-size: 20px;
   line-height: 1.2;
-
-  white-space: nowrap;
 }
-
-
-/* =========================================================
-   DOCUMENT TITLE
-   ========================================================= */
-
-.document-title-wrapper {
-  min-width: 180px;
-  max-width: 300px;
-}
-
-.document-title {
-  width: 100%;
-
-  padding: 6px 9px;
-
-  border: 1px solid transparent;
-  border-radius: 6px;
-
-  background: transparent;
-
-  color: var(--ink);
-
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.document-title:hover {
-  border-color: var(--line);
-  background: var(--panel-soft);
-}
-
-.document-title:focus {
-  border-color: var(--brand);
-  background: var(--panel);
-
-  outline: none;
-}
-
-
-/* =========================================================
-   HEADER ACTIONS
-   ========================================================= */
 
 .header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+
+  flex-wrap: wrap;
 
   gap: 6px;
-
-  flex-wrap: nowrap;
 }
-
 
 /* =========================================================
    BUTTONS
    ========================================================= */
 
 .button {
-  min-height: 32px;
+  min-height: 34px;
 
   padding: 6px 11px;
 
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 7px;
 
   background: var(--panel);
-
   color: var(--ink);
 
   cursor: pointer;
 
   transition:
-    border-color 0.12s ease,
-    background 0.12s ease,
-    color 0.12s ease,
-    box-shadow 0.12s ease;
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
+  border-color: #aab7ce;
+  background: #f8faff;
 }
 
 .button:active {
@@ -255,269 +166,134 @@ select:focus-visible {
 
 .button.primary {
   background: var(--brand);
-
   border-color: var(--brand);
-
   color: white;
-
-  box-shadow:
-    0 2px 5px rgba(39, 100, 240, 0.22);
 }
 
 .button.primary:hover {
-  background: #1d56d8;
-  border-color: #1d56d8;
+  background: #1f55d5;
 }
 
 .button.ghost {
   background: var(--panel);
 }
 
-.icon-button {
-  width: 32px;
-  height: 32px;
+.button.danger {
+  color: var(--danger);
+}
 
-  padding: 0;
+.button[aria-pressed="true"] {
+  color: var(--brand);
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
 
-  border: 1px solid var(--line);
-  border-radius: 6px;
+.button.small {
+  min-height: 29px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
 
-  background: var(--panel);
+/* =========================================================
+   FILE BUTTON
+   ========================================================= */
 
-  color: var(--ink);
-
-  font-size: 19px;
+.file-button {
+  display: inline-flex;
+  align-items: center;
 
   cursor: pointer;
 }
 
-.icon-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
+.file-button input {
+  display: none;
 }
 
-
 /* =========================================================
-   APPLICATION LAYOUT
+   MAIN WORKSPACE
    ========================================================= */
 
-.application {
-  height: calc(100vh - var(--header-height) - var(--footer-height));
+.workspace {
+  height: calc(100vh - 76px);
 
   display: grid;
 
   grid-template-columns:
-    var(--sidebar-width)
+    235px
     minmax(500px, 1fr)
-    var(--inspector-width);
+    275px;
 
-  min-width: 0;
+  overflow: hidden;
 }
 
-
 /* =========================================================
-   LEFT SIDEBAR
+   SIDEBARS
    ========================================================= */
 
-.left-sidebar {
+.sidebar {
   min-width: 0;
 
-  background: var(--panel);
+  padding: 15px;
 
-  border-right: 1px solid var(--line);
+  background: var(--panel);
 
   overflow-y: auto;
   overflow-x: hidden;
-
-  padding: 14px 12px;
 }
 
-.left-sidebar::-webkit-scrollbar,
-.right-sidebar::-webkit-scrollbar {
-  width: 7px;
+.palette-panel {
+  border-right: 1px solid var(--line);
 }
 
-.left-sidebar::-webkit-scrollbar-thumb,
-.right-sidebar::-webkit-scrollbar-thumb {
-  background: var(--line-dark);
-  border-radius: 10px;
+.inspector-panel {
+  border-left: 1px solid var(--line);
 }
 
+.sidebar h2 {
+  margin-bottom: 7px;
 
-/* =========================================================
-   SIDEBAR SECTION
-   ========================================================= */
+  font-size: 14px;
+  font-weight: 750;
+}
 
 .sidebar-section {
-  padding-bottom: 17px;
-  margin-bottom: 16px;
-
-  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
 }
 
-.sidebar-section:last-child {
-  border-bottom: 0;
-}
-
-.section-title {
-  font-size: 13px;
-  font-weight: 750;
-
-  color: var(--ink);
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 5px;
-}
-
-.sidebar-hint {
-  margin: 3px 0 10px;
-
+.hint {
   color: var(--muted);
-
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
 }
-
 
 /* =========================================================
-   SMALL BUTTON
+   COMPONENT PALETTE
    ========================================================= */
 
-.small-button {
-  width: 24px;
-  height: 24px;
-
-  padding: 0;
-
-  border: 1px solid var(--line);
-
-  border-radius: 5px;
-
-  background: var(--panel);
-
-  color: var(--muted);
-
-  cursor: pointer;
-}
-
-.small-button:hover {
-  color: var(--brand);
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-}
-
-
-/* =========================================================
-   TOOL GRID
-   ========================================================= */
-
-.tool-grid {
+.palette {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  gap: 5px;
+  gap: 7px;
 
-  margin-top: 8px;
+  margin-top: 10px;
+  margin-bottom: 24px;
 }
 
-.tool-button {
-  min-height: 54px;
+.palette-item {
+  min-height: 76px;
+
+  padding: 9px 8px;
 
   display: flex;
-
   flex-direction: column;
-
-  align-items: center;
-  justify-content: center;
-
-  gap: 3px;
-
-  padding: 5px 3px;
-
-  border: 1px solid var(--line);
-
-  border-radius: 7px;
-
-  background: var(--panel-soft);
-
-  color: var(--ink-soft);
-
-  cursor: pointer;
-
-  font-size: 10px;
-
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease,
-    color 0.12s ease;
-}
-
-.tool-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-}
-
-.tool-button.active {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand);
-
-  box-shadow:
-    inset 0 0 0 1px rgba(39, 100, 240, 0.10);
-}
-
-.tool-icon {
-  font-size: 17px;
-
-  line-height: 1;
-
-  height: 19px;
-
-  display: flex;
-  align-items: center;
-}
-
-
-/* =========================================================
-   ARCHITECTURE COMPONENT GRID
-   ========================================================= */
-
-.component-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 6px;
-}
-
-.component-button {
-  min-height: 70px;
-
-  display: flex;
-
-  flex-direction: column;
-
   align-items: flex-start;
   justify-content: center;
 
-  gap: 3px;
-
-  padding: 8px;
-
   border: 1px solid var(--line);
+  border-radius: 8px;
 
-  border-radius: 7px;
-
-  background: var(--panel-soft);
-
+  background: #f8faff;
   color: var(--ink);
 
   cursor: grab;
@@ -525,302 +301,52 @@ select:focus-visible {
   text-align: left;
 
   transition:
-    border-color 0.12s ease,
-    background 0.12s ease,
-    box-shadow 0.12s ease,
-    transform 0.12s ease;
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease;
 }
 
-.component-button:hover {
-  border-color: var(--brand-border);
-
-  background: var(--brand-soft);
-
-  box-shadow: var(--shadow-sm);
+.palette-item:hover {
+  border-color: #9fb0cc;
+  background: #ffffff;
 }
 
-.component-button:active {
+.palette-item:active {
   cursor: grabbing;
   transform: scale(0.98);
 }
 
-.component-icon {
-  width: 26px;
-  height: 26px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 5px;
-
-  background: var(--panel);
-
-  border: 1px solid var(--line);
-
-  font-size: 15px;
-}
-
-.component-name {
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.component-category {
-  font-size: 9px;
-  color: var(--muted);
-}
-
-
-/* =========================================================
-   SHAPE GRID
-   ========================================================= */
-
-.shape-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, 1fr);
-
-  gap: 5px;
-}
-
-.shape-button {
-  height: 48px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid var(--line);
-
-  border-radius: 6px;
-
-  background: var(--panel-soft);
-
-  cursor: grab;
-
-  color: var(--ink);
-
-  font-size: 20px;
-
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
-}
-
-.shape-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-}
-
-
-/* =========================================================
-   CONNECTOR BUTTONS
-   ========================================================= */
-
-.connector-list {
-  display: grid;
-
-  gap: 5px;
-}
-
-.connector-button {
-  min-height: 34px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 9px;
-
-  padding: 6px 8px;
-
-  border: 1px solid var(--line);
-
-  border-radius: 6px;
-
-  background: var(--panel-soft);
-
-  color: var(--ink);
-
-  cursor: pointer;
-
-  text-align: left;
-
-  font-size: 11px;
-}
-
-.connector-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-}
-
-.connector-button.active {
-  border-color: var(--brand);
-
-  background: var(--brand-soft);
-
-  color: var(--brand);
-}
-
-
-/* =========================================================
-   CONNECTOR PREVIEWS
-   ========================================================= */
-
-.connector-preview {
-  width: 48px;
-  height: 20px;
-
-  position: relative;
-
-  display: inline-block;
-}
-
-.connector-preview::after {
-  content: "";
-
-  position: absolute;
-
-  right: 1px;
-  top: 50%;
-
-  width: 0;
-  height: 0;
-
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  border-left: 6px solid currentColor;
-
-  transform: translateY(-50%);
-}
-
-
-/* Straight */
-
-.connector-preview.straight::before {
-  content: "";
-
-  position: absolute;
-
-  left: 1px;
-  right: 5px;
-
-  top: 50%;
-
-  border-top: 2px solid currentColor;
-}
-
-
-/* Elbow */
-
-.connector-preview.elbow::before {
-  content: "";
-
-  position: absolute;
-
-  left: 4px;
-  top: 3px;
-
-  width: 30px;
-  height: 13px;
-
-  border-left: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-}
-
-
-/* Curved */
-
-.connector-preview.curved::before {
-  content: "";
-
-  position: absolute;
-
-  left: 2px;
-  top: 2px;
-
-  width: 38px;
-  height: 16px;
-
-  border-top: 2px solid currentColor;
-
-  border-radius: 50%;
-}
-
-
-/* Free-form */
-
-.connector-preview.freeform::before {
-  content: "";
-
-  position: absolute;
-
-  left: 1px;
-  top: 3px;
-
-  width: 40px;
-  height: 15px;
-
-  border-top: 2px solid currentColor;
-
-  border-radius: 70% 30% 50% 20%;
-
-  transform: rotate(-4deg);
-}
-
-
-/* Wavy */
-
-.connector-preview.wavy::before {
-  content: "∿∿∿";
-
-  position: absolute;
-
-  left: 0;
-  top: -2px;
-
-  font-size: 18px;
-
-  line-height: 20px;
-}
-
-
-/* =========================================================
-   SIDEBAR ACTION BUTTONS
-   ========================================================= */
-
-.sidebar-action {
-  width: 100%;
-
-  min-height: 34px;
-
-  padding: 7px 9px;
-
+.palette-icon {
   margin-bottom: 5px;
 
-  border: 1px solid var(--line);
+  font-size: 20px;
+  line-height: 1;
+}
 
-  border-radius: 6px;
+.palette-label {
+  font-size: 12px;
+  line-height: 1.25;
+}
 
-  background: var(--panel-soft);
+/* =========================================================
+   LIBRARY CATEGORIES
+   ========================================================= */
 
-  color: var(--ink);
+.library-category {
+  margin-bottom: 18px;
+}
 
-  cursor: pointer;
+.library-category-title {
+  margin-bottom: 7px;
 
-  text-align: left;
+  color: var(--muted);
 
   font-size: 11px;
-}
+  font-weight: 800;
 
-.sidebar-action:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-
 
 /* =========================================================
    TEMPLATE BUTTONS
@@ -829,38 +355,31 @@ select:focus-visible {
 .template-button {
   width: 100%;
 
-  min-height: 35px;
+  margin-bottom: 7px;
 
-  margin-bottom: 6px;
-
-  padding: 7px 9px;
+  padding: 9px 10px;
 
   border: 1px solid var(--line);
+  border-radius: 7px;
 
-  border-radius: 6px;
-
-  background: var(--panel-soft);
-
+  background: var(--bg);
   color: var(--ink);
 
   cursor: pointer;
 
   text-align: left;
-
-  font-size: 11px;
 }
 
 .template-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
+  border-color: #aab7ce;
+  background: #ffffff;
 }
 
-
 /* =========================================================
-   CENTER EDITOR
+   EDITOR
    ========================================================= */
 
-.editor {
+.editor-panel {
   min-width: 0;
   min-height: 0;
 
@@ -870,130 +389,75 @@ select:focus-visible {
   background: var(--canvas);
 }
 
-
 /* =========================================================
-   EDITOR TOOLBAR
+   TOOLBAR
    ========================================================= */
 
-.editor-toolbar {
-  min-height: 46px;
+.toolbar {
+  min-height: var(--toolbar-height);
+
+  padding: 8px 12px;
 
   display: flex;
   align-items: center;
 
-  gap: 6px;
+  flex-wrap: wrap;
 
-  padding: 6px 9px;
+  gap: 7px;
 
   background: var(--panel);
-
   border-bottom: 1px solid var(--line);
 
-  flex-shrink: 0;
-
-  z-index: 50;
+  z-index: 20;
 }
 
-.toolbar-group {
+.toolbar label {
   display: flex;
-  align-items: center;
+  flex-direction: column;
 
-  gap: 4px;
-}
-
-.toolbar-spacer {
-  flex: 1;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 24px;
-
-  background: var(--line);
-
-  margin: 0 4px;
-}
-
-.toolbar-button {
-  min-height: 30px;
-
-  padding: 5px 9px;
-
-  border: 1px solid var(--line);
-
-  border-radius: 5px;
-
-  background: var(--panel);
-
-  color: var(--ink-soft);
-
-  cursor: pointer;
-
-  font-size: 11px;
-}
-
-.toolbar-button:hover {
-  border-color: var(--brand-border);
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-
-.toolbar-button.active {
-  border-color: var(--brand);
-
-  background: var(--brand-soft);
-
-  color: var(--brand);
-}
-
-.toolbar-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.danger-text {
-  color: var(--danger);
-}
-
-.zoom-label {
-  min-width: 42px;
-
-  text-align: center;
+  gap: 3px;
 
   color: var(--muted);
 
   font-size: 11px;
 }
 
+.toolbar input {
+  width: 190px;
+}
 
 /* =========================================================
-   CANVAS VIEWPORT
+   FORM ELEMENTS
    ========================================================= */
 
-.canvas-viewport {
-  position: relative;
-
-  flex: 1;
-
+input,
+textarea,
+select {
   min-width: 0;
-  min-height: 0;
 
-  overflow: auto;
+  padding: 7px 8px;
 
-  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  background: var(--panel);
+  color: var(--ink);
+
+  outline: none;
 }
 
-.canvas-viewport::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--brand);
+
+  box-shadow:
+    0 0 0 2px rgba(39, 100, 240, 0.12);
 }
 
-.canvas-viewport::-webkit-scrollbar-thumb {
-  background: var(--line-dark);
-
-  border-radius: 10px;
+textarea {
+  resize: vertical;
 }
-
 
 /* =========================================================
    CANVAS
@@ -1002,42 +466,45 @@ select:focus-visible {
 .canvas {
   position: relative;
 
-  width: 3000px;
-  height: 2000px;
+  flex: 1;
+
+  min-height: 0;
+
+  overflow: auto;
 
   background-color: var(--canvas);
 
   background-image:
     radial-gradient(
-      circle,
-      var(--canvas-grid) 1px,
+      var(--line) 1px,
       transparent 1px
     );
 
   background-size: 18px 18px;
 
-  transform-origin: 0 0;
-
-  outline: none;
+  isolation: isolate;
 
   user-select: none;
 }
 
+/*
+  Large logical drawing surface.
 
-/* =========================================================
-   GRID OFF STATE
-   ========================================================= */
+  The JavaScript can resize this dynamically when required.
+*/
 
-.canvas.grid-hidden {
-  background-image: none;
+.canvas-inner {
+  position: relative;
+
+  width: 3000px;
+  height: 2000px;
 }
 
-
 /* =========================================================
-   SVG CONNECTOR LAYER
+   SVG EDGE LAYER
    ========================================================= */
 
-.connector-layer {
+.edges {
   position: absolute;
 
   inset: 0;
@@ -1049,590 +516,163 @@ select:focus-visible {
 
   pointer-events: none;
 
-  z-index: 20;
+  z-index: 5;
 }
 
-.connector-layer path,
-.connector-layer line,
-.connector-layer polyline {
-  vector-effect: non-scaling-stroke;
-}
+/* Basic connector */
 
-
-/* =========================================================
-   CONNECTOR DEFAULT STYLE
-   ========================================================= */
-
-.connector-path {
+.edge {
   fill: none;
 
-  stroke: #475569;
-
+  stroke: #64748b;
   stroke-width: 2;
 
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-
-  pointer-events:
-    stroke;
+  pointer-events: stroke;
 
   cursor: pointer;
-
-  transition:
-    stroke 0.1s ease,
-    stroke-width 0.1s ease;
 }
 
-.connector-path:hover {
+/* Selected connector */
+
+.edge.selected {
   stroke: var(--brand);
 
   stroke-width: 3;
 }
 
-.connector-path.selected {
+/* Highlighted connector */
+
+.edge.highlight {
   stroke: var(--brand);
 
   stroke-width: 3.5;
 }
 
+/* Dashed connector */
+
+.edge.dashed {
+  stroke-dasharray: 8 5;
+}
+
+/* Dotted connector */
+
+.edge.dotted {
+  stroke-dasharray: 2 5;
+}
+
+/* Curved / freeform connectors */
+
+.edge.curved,
+.edge.bezier,
+.edge.wavy {
+  fill: none;
+}
 
 /* =========================================================
-   CONNECTOR LABEL
+   EDGE LABELS
    ========================================================= */
 
-.connector-label {
-  pointer-events: none;
-
-  fill: var(--ink-soft);
+.edge-label {
+  fill: var(--muted);
 
   font-size: 11px;
 
   paint-order: stroke;
 
   stroke: var(--canvas);
-
   stroke-width: 5px;
 
-  stroke-linejoin: round;
-}
-
-
-/* =========================================================
-   DASHED / DOTTED CONNECTORS
-   ========================================================= */
-
-.connector-dashed {
-  stroke-dasharray: 8 5;
-}
-
-.connector-dotted {
-  stroke-dasharray: 2 5;
-}
-
-
-/* =========================================================
-   CONNECTOR CONTROL POINTS
-   ========================================================= */
-
-.connector-control {
-  pointer-events: all;
-
-  cursor: move;
-
-  fill: white;
-
-  stroke: var(--brand);
-
-  stroke-width: 2;
-
-  vector-effect: non-scaling-stroke;
-}
-
-.connector-control:hover {
-  fill: var(--brand-soft);
-}
-
-.connector-handle-line {
-  stroke: var(--brand-border);
-
-  stroke-width: 1;
-
-  stroke-dasharray: 4 4;
-
   pointer-events: none;
 }
 
+.edge-label.selected {
+  fill: var(--brand);
+}
 
 /* =========================================================
-   TEMPORARY CONNECTOR
+   NODE LAYER
    ========================================================= */
 
-.interaction-layer {
+.nodes {
   position: absolute;
 
   inset: 0;
 
-  width: 100%;
-  height: 100%;
-
-  z-index: 80;
+  z-index: 10;
 
   pointer-events: none;
-
-  overflow: visible;
 }
-
-#temporaryConnector {
-  fill: none;
-
-  stroke: var(--brand);
-
-  stroke-width: 2;
-
-  stroke-dasharray: 7 5;
-
-  stroke-linecap: round;
-}
-
-
-/* =========================================================
-   OBJECTS LAYER
-   ========================================================= */
-
-.objects-layer {
-  position: absolute;
-
-  inset: 0;
-
-  z-index: 30;
-}
-
-
-/* =========================================================
-   BASE CANVAS OBJECT
-   ========================================================= */
-
-.canvas-object {
-  position: absolute;
-
-  min-width: 20px;
-  min-height: 20px;
-
-  transform-origin: center center;
-
-  user-select: none;
-
-  cursor: move;
-
-  box-sizing: border-box;
-
-  outline: none;
-}
-
-.canvas-object:hover {
-  z-index: 40;
-}
-
 
 /* =========================================================
    ARCHITECTURE NODE
    ========================================================= */
 
-.architecture-node {
-  width: 160px;
-  min-height: 82px;
+.node {
+  position: absolute;
 
-  padding: 10px;
+  width: 150px;
+  min-height: 76px;
+
+  padding: 9px;
 
   border: 2px solid #b9c4d7;
-
-  border-radius: 9px;
+  border-radius: 8px;
 
   background: var(--panel);
 
-  box-shadow:
-    0 3px 12px rgba(24, 36, 58, 0.08);
+  box-shadow: var(--shadow-sm);
 
-  overflow: visible;
+  cursor: grab;
+
+  user-select: none;
+
+  pointer-events: auto;
+
+  transition:
+    box-shadow 0.1s ease,
+    border-color 0.1s ease;
 }
 
-.architecture-node.selected {
+.node:hover {
+  border-color: #9eabc0;
+
+  box-shadow: var(--shadow-md);
+}
+
+.node:active {
+  cursor: grabbing;
+}
+
+/* Selected node */
+
+.node.selected {
   border-color: var(--brand);
 
   box-shadow:
-    0 0 0 3px rgba(39, 100, 240, 0.16),
+    0 0 0 3px rgba(39, 100, 240, 0.18),
     var(--shadow-md);
 }
 
-.node-header {
-  display: flex;
+/* Impact */
 
-  align-items: center;
-
-  gap: 7px;
-
-  margin-bottom: 5px;
-}
-
-.node-icon {
-  width: 24px;
-  height: 24px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  flex-shrink: 0;
-
-  font-size: 16px;
-}
-
-.node-type {
-  color: var(--muted);
-
-  font-size: 9px;
-
-  text-transform: uppercase;
-
-  letter-spacing: 0.04em;
-}
-
-.node-title {
-  display: block;
-
-  max-width: 100%;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-  color: var(--ink);
-
-  font-size: 12px;
-
-  font-weight: 750;
-}
-
-.node-meta {
-  margin-top: 8px;
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-}
-
-
-/* =========================================================
-   SECURITY ZONE
-   ========================================================= */
-
-.zone-object {
-  width: 320px;
-  height: 220px;
-
-  padding: 12px;
-
-  border: 2px dashed #8ba6d8;
-
-  border-radius: 12px;
-
-  background: rgba(39, 100, 240, 0.045);
-
-  z-index: 5;
-}
-
-.zone-object .node-title {
-  font-size: 13px;
-}
-
-.zone-object .node-meta {
-  margin-top: 3px;
-}
-
-
-/* =========================================================
-   BASIC SHAPES
-   ========================================================= */
-
-.shape-object {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  padding: 10px;
-
-  border: 2px solid #64748b;
-
-  background: white;
-
-  color: var(--ink);
-
-  font-size: 13px;
-
-  font-weight: 600;
-
-  text-align: center;
-
-  overflow: visible;
-}
-
-.shape-object.selected {
-  outline: 3px solid rgba(39, 100, 240, 0.18);
-
-  outline-offset: 2px;
-}
-
-.shape-rectangle {
-  border-radius: 4px;
-}
-
-.shape-rounded {
-  border-radius: 14px;
-}
-
-.shape-ellipse {
-  border-radius: 50%;
-}
-
-.shape-diamond {
-  transform: rotate(45deg);
-}
-
-.shape-diamond .shape-content {
-  transform: rotate(-45deg);
-}
-
-.shape-triangle {
-  width: 0 !important;
-  height: 0 !important;
-
-  min-width: 0;
-
-  min-height: 0;
-
-  padding: 0;
-
-  background: transparent;
-
-  border-left: 70px solid transparent;
-  border-right: 70px solid transparent;
-  border-bottom: 120px solid #ffffff;
-
-  position: relative;
-}
-
-.shape-triangle::after {
-  content: "";
-
-  position: absolute;
-
-  left: -68px;
-  top: 3px;
-
-  border-left: 68px solid transparent;
-  border-right: 68px solid transparent;
-  border-bottom: 116px solid #ffffff;
-}
-
-.shape-parallelogram {
-  transform: skewX(-15deg);
-}
-
-.shape-parallelogram .shape-content {
-  transform: skewX(15deg);
-}
-
-
-/* =========================================================
-   TEXT OBJECT
-   ========================================================= */
-
-.text-object {
-  min-width: 70px;
-
-  min-height: 30px;
-
-  padding: 5px 8px;
-
-  color: var(--ink);
-
-  background: transparent;
-
-  border: 1px solid transparent;
-
-  font-size: 18px;
-
-  font-weight: 500;
-
-  white-space: pre-wrap;
-
-  cursor: text;
-}
-
-.text-object:hover,
-.text-object.selected {
-  border-color: var(--brand-border);
-
-  background: rgba(255, 255, 255, 0.55);
-}
-
-
-/* =========================================================
-   STICKY NOTE
-   ========================================================= */
-
-.sticky-object {
-  width: 180px;
-  min-height: 150px;
-
-  padding: 14px;
-
-  background: #fff3a6;
-
-  border: 1px solid #e0c85b;
+.node.impact {
+  border-color: #f09c27;
 
   box-shadow:
-    0 4px 12px rgba(80, 65, 10, 0.14);
+    0 0 0 3px rgba(240, 156, 39, 0.18);
+}
 
-  font-size: 13px;
+/* Image nodes */
 
-  white-space: pre-wrap;
+.node.image-node {
+  padding: 5px;
 
   overflow: hidden;
-}
-
-.sticky-object.selected {
-  outline: 3px solid rgba(39, 100, 240, 0.18);
-
-  outline-offset: 2px;
-}
-
-.sticky-pin {
-  position: absolute;
-
-  width: 10px;
-  height: 10px;
-
-  left: 50%;
-  top: -5px;
-
-  transform: translateX(-50%);
-
-  border-radius: 50%;
-
-  background: #d54d4d;
-
-  border: 2px solid white;
-
-  box-shadow: var(--shadow-sm);
-}
-
-
-/* =========================================================
-   COMMENT OBJECT
-   ========================================================= */
-
-.comment-object {
-  width: 220px;
-
-  padding: 11px 12px;
-
-  border: 1px solid #c7d1e2;
-
-  border-radius: 8px;
 
   background: #ffffff;
-
-  box-shadow: var(--shadow-md);
-
-  color: var(--ink);
-
-  font-size: 12px;
 }
 
-.comment-object::before {
-  content: "";
-
-  position: absolute;
-
-  bottom: -8px;
-  left: 18px;
-
-  width: 14px;
-  height: 14px;
-
-  background: white;
-
-  border-right: 1px solid #c7d1e2;
-  border-bottom: 1px solid #c7d1e2;
-
-  transform: rotate(45deg);
-}
-
-.comment-author {
-  margin-bottom: 5px;
-
-  color: var(--brand);
-
-  font-size: 10px;
-
-  font-weight: 750;
-}
-
-.comment-text {
-  white-space: pre-wrap;
-}
-
-
-/* =========================================================
-   PIN OBJECT
-   ========================================================= */
-
-.pin-object {
-  width: 26px;
-  height: 34px;
-
-  display: flex;
-
-  align-items: flex-start;
-  justify-content: center;
-
-  color: #d14343;
-
-  font-size: 24px;
-
-  filter:
-    drop-shadow(0 2px 2px rgba(0, 0, 0, 0.12));
-}
-
-
-/* =========================================================
-   IMAGE OBJECT
-   ========================================================= */
-
-.image-object {
-  min-width: 80px;
-  min-height: 60px;
-
-  border: 2px solid transparent;
-
-  background: transparent;
-
-  overflow: visible;
-}
-
-.image-object img {
+.node.image-node img {
   display: block;
 
   width: 100%;
@@ -1641,82 +681,290 @@ select:focus-visible {
   object-fit: contain;
 
   pointer-events: none;
-
-  user-select: none;
 }
-
-.image-object.selected {
-  border-color: var(--brand);
-
-  box-shadow:
-    0 0 0 3px rgba(39, 100, 240, 0.14);
-}
-
 
 /* =========================================================
-   IMAGE CONNECTION POINTS
+   NODE CONTENT
+   ========================================================= */
+
+.node-icon {
+  float: left;
+
+  margin-right: 7px;
+
+  font-size: 21px;
+  line-height: 1;
+}
+
+.node-type {
+  display: block;
+
+  color: var(--muted);
+
+  font-size: 10px;
+
+  text-transform: uppercase;
+}
+
+.node-title {
+  display: block;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-weight: 750;
+}
+
+.node-meta {
+  margin-top: 9px;
+
+  clear: both;
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+/* =========================================================
+   SECURITY / GROUP ZONE
+   ========================================================= */
+
+.node.zone {
+  width: 280px;
+  min-height: 190px;
+
+  z-index: 0;
+
+  background: rgba(39, 100, 240, 0.04);
+
+  border-style: dashed;
+
+  box-shadow: none;
+
+  cursor: grab;
+}
+
+.node.zone.selected {
+  box-shadow:
+    0 0 0 3px rgba(39, 100, 240, 0.12);
+}
+
+.node:not(.zone) {
+  z-index: 10;
+}
+
+/* =========================================================
+   STICKY NOTES
+   ========================================================= */
+
+.sticky-note {
+  position: absolute;
+
+  width: 180px;
+  min-height: 150px;
+
+  padding: 14px;
+
+  background: #fff4a8;
+
+  border: 1px solid #e4d56f;
+
+  box-shadow: var(--shadow-md);
+
+  transform: rotate(0deg);
+
+  cursor: grab;
+
+  pointer-events: auto;
+}
+
+.sticky-note.selected {
+  outline: 3px solid rgba(39, 100, 240, 0.18);
+
+  border-color: var(--brand);
+}
+
+.sticky-note textarea {
+  width: 100%;
+  height: 110px;
+
+  border: 0;
+
+  background: transparent;
+
+  resize: none;
+
+  outline: none;
+}
+
+/* =========================================================
+   COMMENTS
+   ========================================================= */
+
+.comment-node {
+  position: absolute;
+
+  min-width: 180px;
+  max-width: 280px;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  border: 1px solid #d6dce7;
+
+  box-shadow: var(--shadow-md);
+
+  pointer-events: auto;
+
+  cursor: grab;
+}
+
+.comment-node::before {
+  content: "";
+
+  position: absolute;
+
+  bottom: -7px;
+  left: 20px;
+
+  width: 13px;
+  height: 13px;
+
+  background: #fff;
+
+  border-right: 1px solid #d6dce7;
+  border-bottom: 1px solid #d6dce7;
+
+  transform: rotate(45deg);
+}
+
+.comment-author {
+  margin-bottom: 4px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   PINS
+   ========================================================= */
+
+.pin-node {
+  position: absolute;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  border: 2px solid var(--brand);
+
+  color: var(--brand);
+
+  box-shadow: var(--shadow-md);
+
+  cursor: grab;
+
+  pointer-events: auto;
+}
+
+.pin-node::after {
+  content: "";
+
+  position: absolute;
+
+  bottom: -8px;
+
+  width: 0;
+  height: 0;
+
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+
+  border-top: 9px solid var(--brand);
+}
+
+/* =========================================================
+   RESIZE HANDLES
+   ========================================================= */
+
+.resize-handle {
+  position: absolute;
+
+  width: 8px;
+  height: 8px;
+
+  border: 1px solid var(--brand);
+
+  background: #ffffff;
+
+  border-radius: 2px;
+
+  z-index: 100;
+
+  display: none;
+}
+
+.node.selected .resize-handle,
+.sticky-note.selected .resize-handle,
+.comment-node.selected .resize-handle,
+.image-node.selected .resize-handle {
+  display: block;
+}
+
+.resize-handle.nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.resize-handle.ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+/* =========================================================
+   CONNECTION PORTS
    ========================================================= */
 
 .connection-port {
   position: absolute;
 
-  width: 12px;
-  height: 12px;
-
-  margin-left: -6px;
-  margin-top: -6px;
-
-  border-radius: 50%;
-
-  border: 2px solid var(--brand);
-
-  background: white;
-
-  opacity: 0;
-
-  pointer-events: none;
-
-  z-index: 100;
-
-  transition:
-    opacity 0.1s ease,
-    transform 0.1s ease,
-    background 0.1s ease;
-}
-
-.canvas-object:hover .connection-port,
-.canvas-object.selected .connection-port,
-.canvas-object.connectable-active .connection-port {
-  opacity: 1;
-
-  pointer-events: auto;
-}
-
-.connection-port:hover {
-  background: var(--brand);
-
-  transform: scale(1.25);
-
-  cursor: crosshair;
-}
-
-
-/* =========================================================
-   STANDARD OBJECT CONNECTION PORTS
-   ========================================================= */
-
-.object-port {
-  position: absolute;
-
   width: 10px;
   height: 10px;
 
-  margin-left: -5px;
-  margin-top: -5px;
-
   border-radius: 50%;
 
-  background: white;
+  background: #ffffff;
 
   border: 2px solid var(--brand);
 
@@ -1724,362 +972,121 @@ select:focus-visible {
 
   pointer-events: none;
 
-  z-index: 120;
-
-  transition:
-    opacity 0.1s ease,
-    transform 0.1s ease;
+  z-index: 100;
 }
 
-.canvas-object:hover .object-port,
-.canvas-object.selected .object-port,
-.canvas-object.connectable-active .object-port {
+.node:hover .connection-port,
+.node.selected .connection-port,
+.image-node:hover .connection-port,
+.image-node.selected .connection-port {
   opacity: 1;
 
   pointer-events: auto;
 }
 
-.object-port:hover {
-  transform: scale(1.3);
-
-  background: var(--brand);
-
-  cursor: crosshair;
+.connection-port.top {
+  top: -6px;
+  left: calc(50% - 5px);
 }
 
+.connection-port.right {
+  top: calc(50% - 5px);
+  right: -6px;
+}
+
+.connection-port.bottom {
+  bottom: -6px;
+  left: calc(50% - 5px);
+}
+
+.connection-port.left {
+  top: calc(50% - 5px);
+  left: -6px;
+}
 
 /* =========================================================
-   SELECTION LAYER
+   CANVAS EMPTY MESSAGE
    ========================================================= */
 
-.selection-layer {
+.canvas-empty {
   position: absolute;
 
-  inset: 0;
+  top: 48%;
+  left: 0;
 
-  z-index: 100;
+  width: 100%;
+
+  color: var(--muted);
+
+  text-align: center;
 
   pointer-events: none;
 }
+
+/* =========================================================
+   MULTI-SELECTION
+   ========================================================= */
 
 .selection-box {
   position: absolute;
 
   border: 1px solid var(--brand);
 
-  background: rgba(39, 100, 240, 0.06);
+  background: rgba(39, 100, 240, 0.08);
 
   pointer-events: none;
+
+  z-index: 500;
 }
-
-.selection-handle {
-  position: absolute;
-
-  width: 8px;
-  height: 8px;
-
-  margin-left: -4px;
-  margin-top: -4px;
-
-  border: 1px solid var(--brand);
-
-  background: white;
-
-  pointer-events: auto;
-
-  cursor: nwse-resize;
-}
-
 
 /* =========================================================
-   MULTI-SELECTION
+   STATUS BAR
    ========================================================= */
 
-.multi-selection {
-  outline:
-    1px dashed var(--brand);
+.status {
+  min-height: 30px;
 
-  outline-offset: 4px;
-}
-
-
-/* =========================================================
-   EMPTY CANVAS
-   ========================================================= */
-
-.canvas-empty {
-  position: absolute;
-
-  left: 50%;
-  top: 45%;
-
-  transform: translate(-50%, -50%);
-
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  gap: 7px;
+  padding: 7px 13px;
 
   color: var(--muted);
-
-  pointer-events: none;
-
-  text-align: center;
-
-  transition: opacity 0.15s ease;
-}
-
-.canvas-empty.hidden {
-  opacity: 0;
-}
-
-.empty-icon {
-  width: 48px;
-  height: 48px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 12px;
-
-  background: var(--brand-soft);
-
-  color: var(--brand);
-
-  font-size: 26px;
-}
-
-.canvas-empty strong {
-  color: var(--ink-soft);
-
-  font-size: 14px;
-}
-
-.canvas-empty span {
-  font-size: 11px;
-}
-
-
-/* =========================================================
-   RIGHT SIDEBAR
-   ========================================================= */
-
-.right-sidebar {
-  min-width: 0;
 
   background: var(--panel);
 
-  border-left: 1px solid var(--line);
-
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-
-/* =========================================================
-   INSPECTOR HEADER
-   ========================================================= */
-
-.inspector-header {
-  min-height: 58px;
-
-  padding: 13px;
-
-  display: flex;
-  align-items: center;
-
-  border-bottom: 1px solid var(--line);
-}
-
-.inspector-subtitle {
-  margin-top: 2px;
-
-  color: var(--muted);
-
-  font-size: 10px;
-}
-
-
-/* =========================================================
-   INSPECTOR SECTION
-   ========================================================= */
-
-.inspector-section {
-  padding: 13px;
-
-  border-bottom: 1px solid var(--line);
-}
-
-.inspector-section-title {
-  margin-bottom: 11px;
-
-  color: var(--ink);
+  border-top: 1px solid var(--line);
 
   font-size: 12px;
-
-  font-weight: 750;
 }
 
-
 /* =========================================================
-   FORM FIELDS
+   INSPECTOR
    ========================================================= */
 
-.field {
-  display: flex;
+.inspector-panel form {
+  display: grid;
 
+  gap: 11px;
+
+  margin-bottom: 22px;
+}
+
+.inspector-panel label {
+  display: flex;
   flex-direction: column;
 
   gap: 4px;
 
-  margin-bottom: 10px;
-}
-
-.field > span {
   color: var(--muted);
 
-  font-size: 10px;
-
-  font-weight: 600;
+  font-size: 12px;
 }
 
-.field input,
-.field textarea,
-.field select {
-  width: 100%;
-
-  border: 1px solid var(--line);
-
-  border-radius: 5px;
-
-  padding: 7px 8px;
-
-  background: var(--panel);
-
-  color: var(--ink);
-
-  font-size: 11px;
+.inspector-panel h2 {
+  margin-top: 4px;
 }
 
-.field textarea {
-  resize: vertical;
-
-  min-height: 60px;
+.inspector-section {
+  margin-bottom: 20px;
 }
-
-.field input:hover,
-.field textarea:hover,
-.field select:hover {
-  border-color: var(--line-dark);
-}
-
-.field input:focus,
-.field textarea:focus,
-.field select:focus {
-  border-color: var(--brand);
-
-  outline: none;
-
-  box-shadow:
-    0 0 0 2px rgba(39, 100, 240, 0.08);
-}
-
-.field input:disabled {
-  background: var(--panel-soft);
-
-  color: var(--muted);
-
-  cursor: not-allowed;
-}
-
-
-/* =========================================================
-   COLOR INPUT
-   ========================================================= */
-
-.field input[type="color"] {
-  height: 34px;
-
-  padding: 3px;
-
-  cursor: pointer;
-}
-
-
-/* =========================================================
-   RANGE INPUT
-   ========================================================= */
-
-.field input[type="range"] {
-  padding: 0;
-
-  accent-color: var(--brand);
-
-  cursor: pointer;
-}
-
-
-/* =========================================================
-   TWO COLUMN FORM
-   ========================================================= */
-
-.two-column {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 7px;
-}
-
-.two-column .field {
-  margin-bottom: 4px;
-}
-
-
-/* =========================================================
-   CHECKBOX
-   ========================================================= */
-
-.checkbox-field {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  margin-bottom: 10px;
-
-  color: var(--ink-soft);
-
-  font-size: 11px;
-
-  cursor: pointer;
-}
-
-.checkbox-field input {
-  accent-color: var(--brand);
-}
-
-
-/* =========================================================
-   INSPECTOR HELP
-   ========================================================= */
-
-.inspector-help {
-  margin: 0 0 9px;
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  line-height: 1.5;
-}
-
 
 /* =========================================================
    VALIDATION
@@ -2089,9 +1096,9 @@ select:focus-visible {
 .impact-results {
   display: grid;
 
-  gap: 6px;
+  gap: 7px;
 
-  margin-top: 10px;
+  margin-bottom: 20px;
 }
 
 .finding {
@@ -2099,13 +1106,11 @@ select:focus-visible {
 
   border-left: 3px solid var(--warning);
 
-  border-radius: 3px;
+  background: var(--bg);
 
-  background: var(--panel-soft);
+  color: var(--ink);
 
-  color: var(--ink-soft);
-
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .finding.warning {
@@ -2120,57 +1125,6 @@ select:focus-visible {
   border-left-color: var(--success);
 }
 
-
-/* =========================================================
-   STATUS BAR
-   ========================================================= */
-
-.status-bar {
-  min-height: 28px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
-
-  padding: 4px 10px;
-
-  background: var(--panel);
-
-  border-top: 1px solid var(--line);
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  flex-shrink: 0;
-}
-
-.status-message {
-  flex: 1;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-}
-
-.status-right {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  white-space: nowrap;
-}
-
-.status-separator {
-  color: var(--line-dark);
-}
-
-
 /* =========================================================
    CONTEXT MENU
    ========================================================= */
@@ -2178,31 +1132,29 @@ select:focus-visible {
 .context-menu {
   position: fixed;
 
-  min-width: 170px;
+  min-width: 190px;
 
   padding: 5px;
 
-  background: white;
+  background: #ffffff;
 
   border: 1px solid var(--line);
 
-  border-radius: 7px;
+  border-radius: 8px;
 
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .context-menu button {
   width: 100%;
 
-  min-height: 30px;
-
-  padding: 6px 9px;
+  padding: 8px 10px;
 
   border: 0;
 
-  border-radius: 4px;
+  border-radius: 5px;
 
   background: transparent;
 
@@ -2211,8 +1163,6 @@ select:focus-visible {
   text-align: left;
 
   cursor: pointer;
-
-  font-size: 11px;
 }
 
 .context-menu button:hover {
@@ -2221,498 +1171,372 @@ select:focus-visible {
   color: var(--brand);
 }
 
-.context-divider {
-  height: 1px;
-
-  margin: 4px 2px;
-
-  background: var(--line);
+.context-menu .danger-item {
+  color: var(--danger);
 }
 
-
 /* =========================================================
-   DROP OVERLAY
+   FLOATING TOOLBAR
    ========================================================= */
 
-.drop-overlay {
-  position: fixed;
-
-  inset: 0;
-
-  z-index: 900;
+.floating-toolbar {
+  position: absolute;
 
   display: flex;
 
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 5px;
+
+  background: #ffffff;
+
+  border: 1px solid var(--line);
+
+  border-radius: 8px;
+
+  box-shadow: var(--shadow-md);
+
+  z-index: 2000;
+}
+
+.floating-toolbar button {
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.floating-toolbar button:hover {
+  background: var(--brand-soft);
+}
+
+/* =========================================================
+   ARROW TOOL
+   ========================================================= */
+
+.arrow-tool-panel {
+  position: absolute;
+
+  z-index: 3000;
+
+  width: 220px;
+
+  padding: 10px;
+
+  background: #ffffff;
+
+  border: 1px solid var(--line);
+
+  border-radius: 9px;
+
+  box-shadow: var(--shadow-md);
+}
+
+.arrow-tool-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 6px;
+}
+
+.arrow-tool-button {
+  padding: 8px;
+
+  border: 1px solid var(--line);
+
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  text-align: left;
+}
+
+.arrow-tool-button:hover {
+  border-color: var(--brand);
+
+  color: var(--brand);
+}
+
+.arrow-preview {
+  width: 100%;
+  height: 35px;
+
+  margin-bottom: 5px;
+}
+
+/* =========================================================
+   DROP TARGET
+   ========================================================= */
+
+.canvas.drop-target {
+  outline: 2px dashed var(--brand);
+
+  outline-offset: -4px;
+
+  background-color: #eaf0ff;
+}
+
+/* =========================================================
+   IMAGE IMPORT
+   ========================================================= */
+
+.image-import-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  display: flex;
   align-items: center;
   justify-content: center;
 
   background: rgba(39, 100, 240, 0.08);
 
-  backdrop-filter: blur(2px);
+  border: 3px dashed var(--brand);
+
+  z-index: 5000;
 
   pointer-events: none;
 }
 
-.drop-message {
-  min-width: 300px;
+.image-import-message {
+  padding: 20px 30px;
 
-  padding: 28px;
+  background: #ffffff;
+
+  border-radius: 10px;
+
+  box-shadow: var(--shadow-md);
+
+  color: var(--brand);
+
+  font-weight: 700;
+}
+
+/* =========================================================
+   ZOOM CONTROLS
+   ========================================================= */
+
+.zoom-controls {
+  position: absolute;
+
+  right: 14px;
+  bottom: 14px;
 
   display: flex;
-
-  flex-direction: column;
-
   align-items: center;
 
-  gap: 8px;
+  gap: 4px;
 
-  background: white;
+  padding: 4px;
 
-  border: 2px dashed var(--brand);
+  background: #ffffff;
 
-  border-radius: 12px;
+  border: 1px solid var(--line);
 
-  box-shadow: var(--shadow-lg);
+  border-radius: 8px;
 
-  color: var(--ink);
+  box-shadow: var(--shadow-sm);
 
-  text-align: center;
+  z-index: 1000;
 }
 
-.drop-icon {
-  font-size: 34px;
+.zoom-controls button {
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background: transparent;
+
+  cursor: pointer;
 }
 
-.drop-message strong {
-  font-size: 15px;
+.zoom-controls button:hover {
+  background: var(--brand-soft);
+
+  color: var(--brand);
 }
 
-.drop-message span {
+.zoom-level {
+  min-width: 48px;
+
   color: var(--muted);
 
   font-size: 11px;
+
+  text-align: center;
 }
-
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-
-.toast {
-  position: fixed;
-
-  left: 50%;
-  bottom: 48px;
-
-  transform: translateX(-50%);
-
-  max-width: 420px;
-
-  padding: 9px 14px;
-
-  border-radius: 7px;
-
-  background: #172033;
-
-  color: white;
-
-  box-shadow: var(--shadow-lg);
-
-  font-size: 11px;
-
-  z-index: 1100;
-}
-
 
 /* =========================================================
    FOOTER
    ========================================================= */
 
-.app-footer {
-  height: var(--footer-height);
+footer {
+  min-height: 32px;
 
-  display: flex;
+  padding: 7px 20px;
 
-  align-items: center;
-
-  justify-content: space-between;
-
-  padding: 0 12px;
+  color: var(--muted);
 
   border-top: 1px solid var(--line);
 
   background: var(--panel);
 
-  color: var(--muted);
-
-  font-size: 9px;
-
-  position: relative;
-
-  z-index: 100;
+  font-size: 12px;
 }
-
 
 /* =========================================================
-   DRAG STATES
+   SCROLLBARS
    ========================================================= */
 
-body.dragging-object,
-body.dragging-object * {
-  cursor: grabbing !important;
+.sidebar::-webkit-scrollbar,
+.canvas::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-body.connecting,
-body.connecting * {
-  cursor: crosshair !important;
+.sidebar::-webkit-scrollbar-track,
+.canvas::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.canvas.drop-target {
-  outline: 2px solid var(--brand);
+.sidebar::-webkit-scrollbar-thumb,
+.canvas::-webkit-scrollbar-thumb {
+  background: #c7cfdd;
 
-  outline-offset: -2px;
+  border-radius: 8px;
 }
 
+.sidebar::-webkit-scrollbar-thumb:hover,
+.canvas::-webkit-scrollbar-thumb:hover {
+  background: #aeb8ca;
+}
 
 /* =========================================================
-   RESIZE HANDLES
+   RESPONSIVE
    ========================================================= */
 
-.resize-handle {
-  position: absolute;
-
-  width: 9px;
-  height: 9px;
-
-  border: 1px solid var(--brand);
-
-  background: white;
-
-  border-radius: 2px;
-
-  z-index: 200;
-
-  pointer-events: auto;
-}
-
-.resize-handle.nw {
-  left: 0;
-  top: 0;
-
-  cursor: nwse-resize;
-}
-
-.resize-handle.n {
-  left: 50%;
-  top: 0;
-
-  transform: translateX(-50%);
-
-  cursor: ns-resize;
-}
-
-.resize-handle.ne {
-  right: 0;
-  top: 0;
-
-  cursor: nesw-resize;
-}
-
-.resize-handle.e {
-  right: 0;
-  top: 50%;
-
-  transform: translateY(-50%);
-
-  cursor: ew-resize;
-}
-
-.resize-handle.se {
-  right: 0;
-  bottom: 0;
-
-  cursor: nwse-resize;
-}
-
-.resize-handle.s {
-  left: 50%;
-  bottom: 0;
-
-  transform: translateX(-50%);
-
-  cursor: ns-resize;
-}
-
-.resize-handle.sw {
-  left: 0;
-  bottom: 0;
-
-  cursor: nesw-resize;
-}
-
-.resize-handle.w {
-  left: 0;
-  top: 50%;
-
-  transform: translateY(-50%);
-
-  cursor: ew-resize;
-}
-
-
-/* =========================================================
-   ROTATION HANDLE
-   ========================================================= */
-
-.rotation-handle {
-  position: absolute;
-
-  left: 50%;
-  top: -28px;
-
-  width: 12px;
-  height: 12px;
-
-  transform: translateX(-50%);
-
-  border-radius: 50%;
-
-  background: white;
-
-  border: 2px solid var(--brand);
-
-  cursor: grab;
-
-  z-index: 200;
-}
-
-.rotation-line {
-  position: absolute;
-
-  left: 50%;
-  top: -19px;
-
-  width: 1px;
-  height: 19px;
-
-  transform: translateX(-50%);
-
-  background: var(--brand);
-}
-
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
-
-[hidden] {
-  display: none !important;
-}
-
-
-/* =========================================================
-   RESPONSIVE - LARGE TABLETS
-   ========================================================= */
-
-@media (max-width: 1250px) {
-
-  :root {
-    --sidebar-width: 210px;
-    --inspector-width: 255px;
-  }
-
-  .brand-eyebrow {
-    display: none;
-  }
-
-  .component-grid {
+@media (max-width: 1200px) {
+  .workspace {
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      210px
+      minmax(450px, 1fr)
+      250px;
   }
 
   .header-actions {
-    gap: 4px;
+    max-width: 60%;
   }
-
-  .header-actions .button {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
 }
 
-
-/* =========================================================
-   RESPONSIVE - TABLET
-   ========================================================= */
-
-@media (max-width: 1050px) {
-
-  :root {
-    --sidebar-width: 190px;
-    --inspector-width: 240px;
-  }
-
-  .application {
-    grid-template-columns:
-      var(--sidebar-width)
-      minmax(400px, 1fr)
-      var(--inspector-width);
-  }
-
-  .document-title-wrapper {
-    display: none;
-  }
-
-  .toolbar-button {
-    padding-left: 6px;
-    padding-right: 6px;
-  }
-
-  .toolbar-divider {
-    margin: 0 1px;
-  }
-
-}
-
-
-/* =========================================================
-   RESPONSIVE - SMALL TABLET
-   ========================================================= */
-
-@media (max-width: 850px) {
-
-  .application {
-    grid-template-columns:
-      175px
-      minmax(350px, 1fr);
-  }
-
-  .right-sidebar {
-    position: absolute;
-
-    right: 0;
-    top: var(--header-height);
-
-    bottom: var(--footer-height);
-
-    width: 285px;
-
-    z-index: 200;
-
-    box-shadow: var(--shadow-lg);
-
-    transform: translateX(100%);
-
-    transition:
-      transform 0.2s ease;
-  }
-
-}
-
-
-/* =========================================================
-   RESPONSIVE - MOBILE
-   ========================================================= */
-
-@media (max-width: 700px) {
-
+@media (max-width: 1000px) {
   body {
     overflow: auto;
   }
 
   .app-header {
-    height: auto;
-
-    min-height: 72px;
-
-    flex-direction: column;
-
     align-items: flex-start;
-
-    padding: 10px;
+    flex-direction: column;
   }
 
-  .brand-area {
+  .header-actions {
+    max-width: none;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .workspace {
+    height: auto;
+
+    min-height: calc(100vh - 130px);
+
+    grid-template-columns:
+      190px
+      minmax(420px, 1fr);
+  }
+
+  .inspector-panel {
+    grid-column: 1 / -1;
+
+    border-left: 0;
+    border-top: 1px solid var(--line);
+
+    max-height: 500px;
+  }
+
+  .inspector-panel form {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .validation-results,
+  .impact-results {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace {
+    display: flex;
+    flex-direction: column;
+
+    height: auto;
+  }
+
+  .palette-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+
+    max-height: 280px;
+  }
+
+  .palette {
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+  }
+
+  .editor-panel {
+    min-height: 650px;
+  }
+
+  .inspector-panel {
+    max-height: none;
+  }
+
+  .inspector-panel form,
+  .validation-results,
+  .impact-results {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar label {
     width: 100%;
   }
 
-  .brand-area h1 {
-    font-size: 16px;
+  .toolbar input {
+    width: 100%;
   }
 
   .header-actions {
     width: 100%;
-
-    overflow-x: auto;
-
-    padding-bottom: 2px;
   }
 
-  .application {
-    height: auto;
-
-    min-height:
-      calc(100vh - 100px);
-
-    grid-template-columns: 1fr;
+  .canvas {
+    min-height: 560px;
   }
-
-  .left-sidebar {
-    max-height: 300px;
-
-    border-right: 0;
-
-    border-bottom: 1px solid var(--line);
-  }
-
-  .right-sidebar {
-    position: relative;
-
-    top: auto;
-    right: auto;
-    bottom: auto;
-
-    width: auto;
-
-    transform: none;
-
-    border-left: 0;
-
-    border-top: 1px solid var(--line);
-
-    box-shadow: none;
-  }
-
-  .editor {
-    min-height: 650px;
-  }
-
-  .editor-toolbar {
-    overflow-x: auto;
-  }
-
-  .toolbar-spacer {
-    display: none;
-  }
-
-  .tool-grid {
-    grid-template-columns:
-      repeat(6, 1fr);
-  }
-
-  .component-grid {
-    grid-template-columns:
-      repeat(4, 1fr);
-  }
-
-  .shape-grid {
-    grid-template-columns:
-      repeat(6, 1fr);
-  }
-
-  .app-footer {
-    display: none;
-  }
-
 }
