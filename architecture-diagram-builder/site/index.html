@@ -1,7 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -25,90 +26,85 @@
 
   <header class="app-header">
 
-    <div class="brand-area">
+    <div class="app-title">
 
-      <div class="brand-eyebrow">
-        COFFEE BREAK CATALYST
+      <div class="eyebrow">
+        Coffee Break Catalyst
       </div>
 
       <h1>
         Architecture Diagram Builder
       </h1>
 
-      <div class="document-title-wrapper">
-        <input
-          id="diagramName"
-          class="document-title"
-          value="Untitled architecture"
-          aria-label="Diagram name"
-        />
-      </div>
-
     </div>
-
-
-    <!-- =======================================================
-         MAIN HEADER ACTIONS
-         ======================================================= -->
 
     <div class="header-actions">
 
       <button
         id="newDiagram"
-        class="button ghost"
-        title="Create a new diagram"
+        class="button"
+        type="button"
       >
         New
       </button>
 
       <button
-        id="openArch"
-        class="button ghost"
-        title="Open an .arch file"
-      >
-        Open
-      </button>
-
-      <button
         id="saveArch"
         class="button primary"
-        title="Save architecture diagram as .arch"
+        type="button"
       >
         Save .arch
       </button>
 
+      <label class="button file-button">
+        Open .arch
+        <input
+          id="loadDiagram"
+          type="file"
+          accept=".arch,.json,application/json"
+        />
+      </label>
+
       <button
-        id="saveLocal"
-        class="button ghost"
-        title="Save a browser-local copy"
+        id="saveDiagram"
+        class="button"
+        type="button"
       >
         Save Local
       </button>
 
       <button
-        id="undoButton"
-        class="icon-button"
-        title="Undo"
-        aria-label="Undo"
+        id="exportJson"
+        class="button"
+        type="button"
       >
-        ↶
+        Export JSON
+      </button>
+
+      <label class="button file-button">
+        Import JSON
+        <input
+          id="importJson"
+          type="file"
+          accept=".json,application/json"
+        />
+      </label>
+
+      <button
+        id="exportSvg"
+        class="button"
+        type="button"
+      >
+        Export SVG
       </button>
 
       <button
-        id="redoButton"
-        class="icon-button"
-        title="Redo"
-        aria-label="Redo"
+        id="exportPng"
+        class="button primary"
+        type="button"
       >
-        ↷
+        Export PNG
       </button>
-
-      <input
-        id="archFileInput"
-        type="file"
-        accept=".arch,application/json"
-        hidden
-      />
 
     </div>
 
@@ -116,298 +112,676 @@
 
 
   <!-- =========================================================
-       MAIN APPLICATION
+       MAIN WORKSPACE
        ========================================================= -->
 
-  <main class="application">
+  <main class="workspace">
+
 
     <!-- =======================================================
-         LEFT SIDEBAR
+         LEFT PALETTE
          ======================================================= -->
 
-    <aside class="left-sidebar">
+    <aside class="sidebar palette-panel">
 
-      <!-- -----------------------------------------------------
-           TOOLS
-           ----------------------------------------------------- -->
+      <!-- SEARCH -->
 
-      <section class="sidebar-section">
+      <div class="sidebar-section">
 
-        <div class="section-title">
-          Tools
-        </div>
+        <input
+          id="librarySearch"
+          type="search"
+          placeholder="Search components..."
+          autocomplete="off"
+        />
 
-        <div class="tool-grid">
-
-          <button
-            id="selectTool"
-            class="tool-button active"
-            data-tool="select"
-            title="Select objects (V)"
-          >
-            <span class="tool-icon">↖</span>
-            <span>Select</span>
-          </button>
-
-          <button
-            id="panTool"
-            class="tool-button"
-            data-tool="pan"
-            title="Pan canvas"
-          >
-            <span class="tool-icon">✋</span>
-            <span>Pan</span>
-          </button>
-
-          <button
-            id="textTool"
-            class="tool-button"
-            data-tool="text"
-            title="Add text"
-          >
-            <span class="tool-icon">T</span>
-            <span>Text</span>
-          </button>
-
-          <button
-            id="stickyTool"
-            class="tool-button"
-            data-tool="sticky"
-            title="Add sticky note"
-          >
-            <span class="tool-icon">▣</span>
-            <span>Sticky</span>
-          </button>
-
-          <button
-            id="commentTool"
-            class="tool-button"
-            data-tool="comment"
-            title="Add comment"
-          >
-            <span class="tool-icon">💬</span>
-            <span>Comment</span>
-          </button>
-
-          <button
-            id="pinTool"
-            class="tool-button"
-            data-tool="pin"
-            title="Add pin"
-          >
-            <span class="tool-icon">📌</span>
-            <span>Pin</span>
-          </button>
-
-        </div>
-
-      </section>
+      </div>
 
 
-      <!-- =====================================================
-           ARCHITECTURE COMPONENTS
-           ===================================================== -->
+      <!-- ARCHITECTURE COMPONENTS -->
 
       <section class="sidebar-section">
 
-        <div class="section-header">
+        <h2>
+          Architecture
+        </h2>
 
-          <div class="section-title">
-            Architecture
-          </div>
-
-          <button
-            id="expandArchitecture"
-            class="small-button"
-            title="Show architecture components"
-          >
-            +
-          </button>
-
-        </div>
-
-        <p class="sidebar-hint">
+        <p class="hint">
           Drag components onto the canvas.
         </p>
 
         <div
-          id="architecturePalette"
-          class="component-grid"
+          id="palette"
+          class="palette"
         >
-          <!-- Generated by app.js -->
+
+          <!-- Cloud -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="azure-service"
+            type="button"
+          >
+            <span class="palette-icon">☁️</span>
+            <span class="palette-label">
+              Azure Service
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="aws-service"
+            type="button"
+          >
+            <span class="palette-icon">☁</span>
+            <span class="palette-label">
+              AWS Service
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="gcp-service"
+            type="button"
+          >
+            <span class="palette-icon">☁</span>
+            <span class="palette-label">
+              GCP Service
+            </span>
+          </button>
+
+
+          <!-- Compute -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="virtual-machine"
+            type="button"
+          >
+            <span class="palette-icon">🖥️</span>
+            <span class="palette-label">
+              Virtual Machine
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="container"
+            type="button"
+          >
+            <span class="palette-icon">📦</span>
+            <span class="palette-label">
+              Container
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="kubernetes"
+            type="button"
+          >
+            <span class="palette-icon">☸️</span>
+            <span class="palette-label">
+              Kubernetes
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="aks"
+            type="button"
+          >
+            <span class="palette-icon">☸️</span>
+            <span class="palette-label">
+              AKS Cluster
+            </span>
+          </button>
+
+
+          <!-- Networking -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="api-gateway"
+            type="button"
+          >
+            <span class="palette-icon">↔️</span>
+            <span class="palette-label">
+              API Gateway
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="load-balancer"
+            type="button"
+          >
+            <span class="palette-icon">⚖️</span>
+            <span class="palette-label">
+              Load Balancer
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="firewall"
+            type="button"
+          >
+            <span class="palette-icon">🔥</span>
+            <span class="palette-label">
+              Firewall
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="internet"
+            type="button"
+          >
+            <span class="palette-icon">🌐</span>
+            <span class="palette-label">
+              Internet
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="network"
+            type="button"
+          >
+            <span class="palette-icon">🔗</span>
+            <span class="palette-label">
+              Network
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="vnet"
+            type="button"
+          >
+            <span class="palette-icon">▦</span>
+            <span class="palette-label">
+              Virtual Network
+            </span>
+          </button>
+
+
+          <!-- Data -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="database"
+            type="button"
+          >
+            <span class="palette-icon">🗄️</span>
+            <span class="palette-label">
+              Database
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="storage"
+            type="button"
+          >
+            <span class="palette-icon">💾</span>
+            <span class="palette-label">
+              Storage
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="cache"
+            type="button"
+          >
+            <span class="palette-icon">⚡</span>
+            <span class="palette-label">
+              Cache
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="queue"
+            type="button"
+          >
+            <span class="palette-icon">☷</span>
+            <span class="palette-label">
+              Queue
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="event-bus"
+            type="button"
+          >
+            <span class="palette-icon">✦</span>
+            <span class="palette-label">
+              Event Bus
+            </span>
+          </button>
+
+
+          <!-- Enterprise -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="application"
+            type="button"
+          >
+            <span class="palette-icon">▣</span>
+            <span class="palette-label">
+              Application
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="microservice"
+            type="button"
+          >
+            <span class="palette-icon">◈</span>
+            <span class="palette-label">
+              Microservice
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="service"
+            type="button"
+          >
+            <span class="palette-icon">⚙️</span>
+            <span class="palette-label">
+              Service
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="servicenow"
+            type="button"
+          >
+            <span class="palette-icon">◉</span>
+            <span class="palette-label">
+              ServiceNow
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="monitoring"
+            type="button"
+          >
+            <span class="palette-icon">◌</span>
+            <span class="palette-label">
+              Monitoring
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="identity"
+            type="button"
+          >
+            <span class="palette-icon">🔐</span>
+            <span class="palette-label">
+              Identity Provider
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="security"
+            type="button"
+          >
+            <span class="palette-icon">🛡️</span>
+            <span class="palette-label">
+              Security
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="security-zone"
+            type="button"
+          >
+            <span class="palette-icon">▧</span>
+            <span class="palette-label">
+              Security Zone
+            </span>
+          </button>
+
+
+          <!-- AI -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="ai"
+            type="button"
+          >
+            <span class="palette-icon">✨</span>
+            <span class="palette-label">
+              AI Service
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="llm"
+            type="button"
+          >
+            <span class="palette-icon">🧠</span>
+            <span class="palette-label">
+              LLM
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="vector-db"
+            type="button"
+          >
+            <span class="palette-icon">🔷</span>
+            <span class="palette-label">
+              Vector Database
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="agent"
+            type="button"
+          >
+            <span class="palette-icon">🤖</span>
+            <span class="palette-label">
+              AI Agent
+            </span>
+          </button>
+
+
+          <!-- Generic -->
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="user"
+            type="button"
+          >
+            <span class="palette-icon">👤</span>
+            <span class="palette-label">
+              User
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="team"
+            type="button"
+          >
+            <span class="palette-icon">👥</span>
+            <span class="palette-label">
+              Team
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="external-system"
+            type="button"
+          >
+            <span class="palette-icon">◫</span>
+            <span class="palette-label">
+              External System
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="zone"
+            type="button"
+          >
+            <span class="palette-icon">▱</span>
+            <span class="palette-label">
+              Architecture Zone
+            </span>
+          </button>
+
         </div>
 
       </section>
 
 
-      <!-- =====================================================
-           SHAPES
-           ===================================================== -->
+      <!-- SHAPES -->
 
       <section class="sidebar-section">
 
-        <div class="section-header">
+        <h2>
+          Shapes
+        </h2>
 
-          <div class="section-title">
-            Shapes
-          </div>
-
-          <button
-            id="moreShapes"
-            class="small-button"
-            title="More shapes"
-          >
-            +
-          </button>
-
-        </div>
-
-        <p class="sidebar-hint">
-          Basic drawing shapes.
+        <p class="hint">
+          Drawing primitives.
         </p>
 
-        <div
-          id="shapePalette"
-          class="shape-grid"
-        >
-          <!-- Generated by app.js -->
+        <div class="palette">
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="rectangle"
+            type="button"
+          >
+            <span class="palette-icon">□</span>
+            <span class="palette-label">
+              Rectangle
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="rounded-rectangle"
+            type="button"
+          >
+            <span class="palette-icon">▢</span>
+            <span class="palette-label">
+              Rounded Rectangle
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="ellipse"
+            type="button"
+          >
+            <span class="palette-icon">○</span>
+            <span class="palette-label">
+              Ellipse
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="diamond"
+            type="button"
+          >
+            <span class="palette-icon">◇</span>
+            <span class="palette-label">
+              Diamond
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="triangle"
+            type="button"
+          >
+            <span class="palette-icon">△</span>
+            <span class="palette-label">
+              Triangle
+            </span>
+          </button>
+
+          <button
+            class="palette-item"
+            draggable="true"
+            data-type="hexagon"
+            type="button"
+          >
+            <span class="palette-icon">⬡</span>
+            <span class="palette-label">
+              Hexagon
+            </span>
+          </button>
+
         </div>
 
       </section>
 
 
-      <!-- =====================================================
-           CONNECTORS
-           ===================================================== -->
+      <!-- INSERT -->
 
       <section class="sidebar-section">
 
-        <div class="section-title">
-          Connectors
-        </div>
-
-        <p class="sidebar-hint">
-          Draw flexible connections between objects.
-        </p>
-
-        <div class="connector-list">
-
-          <button
-            class="connector-button active"
-            data-connector="straight"
-          >
-            <span class="connector-preview straight"></span>
-            Straight
-          </button>
-
-          <button
-            class="connector-button"
-            data-connector="elbow"
-          >
-            <span class="connector-preview elbow"></span>
-            Elbow
-          </button>
-
-          <button
-            class="connector-button"
-            data-connector="curved"
-          >
-            <span class="connector-preview curved"></span>
-            Curved
-          </button>
-
-          <button
-            class="connector-button"
-            data-connector="freeform"
-          >
-            <span class="connector-preview freeform"></span>
-            Free-form
-          </button>
-
-          <button
-            class="connector-button"
-            data-connector="wavy"
-          >
-            <span class="connector-preview wavy"></span>
-            Wavy
-          </button>
-
-        </div>
-
-      </section>
-
-
-      <!-- =====================================================
-           INSERT
-           ===================================================== -->
-
-      <section class="sidebar-section">
-
-        <div class="section-title">
+        <h2>
           Insert
+        </h2>
+
+        <div class="palette">
+
+          <label class="palette-item">
+            <span class="palette-icon">
+              🖼️
+            </span>
+            <span class="palette-label">
+              Insert Image
+            </span>
+
+            <input
+              id="openImage"
+              type="file"
+              accept="image/*"
+              hidden
+            />
+          </label>
+
+          <button
+            id="insertShape"
+            class="palette-item"
+            type="button"
+          >
+            <span class="palette-icon">
+              ◇
+            </span>
+            <span class="palette-label">
+              Insert Shape
+            </span>
+          </button>
+
+          <button
+            id="insertText"
+            class="palette-item"
+            type="button"
+          >
+            <span class="palette-icon">
+              T
+            </span>
+            <span class="palette-label">
+              Insert Text
+            </span>
+          </button>
+
         </div>
-
-        <button
-          id="insertImage"
-          class="sidebar-action"
-        >
-          🖼 Insert image
-        </button>
-
-        <button
-          id="insertShape"
-          class="sidebar-action"
-        >
-          ◇ Insert shape
-        </button>
-
-        <button
-          id="insertText"
-          class="sidebar-action"
-        >
-          T Insert text
-        </button>
-
-        <input
-          id="imageFileInput"
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-        />
 
       </section>
 
 
-      <!-- =====================================================
-           TEMPLATES
-           ===================================================== -->
+      <!-- TEMPLATES -->
 
       <section class="sidebar-section">
 
-        <div class="section-title">
+        <h2>
           Templates
-        </div>
+        </h2>
 
         <button
           class="template-button"
-          data-template="aiops"
+          data-template="aiops-control-center"
+          type="button"
         >
-          AIOps control center
+          AIOps Control Center
         </button>
 
         <button
           class="template-button"
-          data-template="aks"
+          data-template="aks-application-platform"
+          type="button"
         >
-          AKS application platform
+          AKS Application Platform
         </button>
 
         <button
           class="template-button"
-          data-template="landing"
+          data-template="azure-landing-zone"
+          type="button"
         >
-          Azure landing zone
+          Azure Landing Zone
+        </button>
+
+        <button
+          class="template-button"
+          data-template="enterprise-integration"
+          type="button"
+        >
+          Enterprise Integration
+        </button>
+
+        <button
+          class="template-button"
+          data-template="ai-rag-platform"
+          type="button"
+        >
+          AI / RAG Platform
         </button>
 
       </section>
@@ -415,23 +789,473 @@
     </aside>
 
 
-    <!-- =========================================================
-         CENTER EDITOR
-         ========================================================= -->
+    <!-- =======================================================
+         EDITOR
+         ======================================================= -->
 
-    <section class="editor">
+    <section class="editor-panel">
 
-      <!-- =======================================================
-           TOP TOOLBAR
-           ======================================================= -->
 
-      <div class="editor-toolbar">
+      <!-- =====================================================
+           MAIN TOOLBAR
+           ===================================================== -->
 
-        <div class="toolbar-group">
+      <div class="toolbar">
+
+        <label>
+
+          Diagram name
+
+          <input
+            id="diagramName"
+            type="text"
+            value="Untitled Architecture"
+            placeholder="Diagram name"
+          />
+
+        </label>
+
+
+        <button
+          id="selectTool"
+          class="button"
+          type="button"
+          aria-pressed="true"
+        >
+          ↖ Select
+        </button>
+
+        <button
+          id="panTool"
+          class="button"
+          type="button"
+        >
+          ✋ Pan
+        </button>
+
+        <button
+          id="textTool"
+          class="button"
+          type="button"
+        >
+          T Text
+        </button>
+
+        <button
+          id="addSticky"
+          class="button"
+          type="button"
+        >
+          🟨 Sticky
+        </button>
+
+        <button
+          id="addComment"
+          class="button"
+          type="button"
+        >
+          💬 Comment
+        </button>
+
+        <button
+          id="addPin"
+          class="button"
+          type="button"
+        >
+          📌 Pin
+        </button>
+
+
+        <button
+          id="connectMode"
+          class="button"
+          type="button"
+          aria-pressed="false"
+        >
+          🔗 Connect
+        </button>
+
+        <button
+          id="impactMode"
+          class="button"
+          type="button"
+          aria-pressed="false"
+        >
+          Impact
+        </button>
+
+        <button
+          id="autoLayout"
+          class="button"
+          type="button"
+        >
+          Auto Layout
+        </button>
+
+        <button
+          id="validateDiagram"
+          class="button"
+          type="button"
+        >
+          Validate
+        </button>
+
+        <button
+          id="deleteSelected"
+          class="button danger"
+          type="button"
+        >
+          Delete
+        </button>
+
+      </div>
+
+
+      <!-- =====================================================
+           CONNECTOR TOOLBAR
+           ===================================================== -->
+
+      <div class="toolbar">
+
+        <strong>
+          Connectors
+        </strong>
+
+        <button
+          class="button small"
+          data-edge-type="straight"
+          type="button"
+        >
+          Straight
+        </button>
+
+        <button
+          class="button small"
+          data-edge-type="elbow"
+          type="button"
+        >
+          Elbow
+        </button>
+
+        <button
+          class="button small"
+          data-edge-type="curved"
+          type="button"
+        >
+          Curved
+        </button>
+
+        <button
+          class="button small"
+          data-edge-type="freeform"
+          type="button"
+        >
+          Free-form
+        </button>
+
+        <button
+          class="button small"
+          data-edge-type="wavy"
+          type="button"
+        >
+          Wavy
+        </button>
+
+
+        <button
+          class="button small"
+          data-edge-style="solid"
+          type="button"
+        >
+          Solid
+        </button>
+
+        <button
+          class="button small"
+          data-edge-style="dashed"
+          type="button"
+        >
+          Dashed
+        </button>
+
+        <button
+          class="button small"
+          data-edge-style="dotted"
+          type="button"
+        >
+          Dotted
+        </button>
+
+      </div>
+
+
+      <!-- =====================================================
+           EDITING TOOLBAR
+           ===================================================== -->
+
+      <div class="toolbar">
+
+        <button
+          id="groupSelected"
+          class="button small"
+          type="button"
+        >
+          Group
+        </button>
+
+        <button
+          id="ungroupSelected"
+          class="button small"
+          type="button"
+        >
+          Ungroup
+        </button>
+
+        <button
+          id="copySelected"
+          class="button small"
+          type="button"
+        >
+          Copy
+        </button>
+
+        <button
+          id="pasteSelected"
+          class="button small"
+          type="button"
+        >
+          Paste
+        </button>
+
+        <button
+          id="duplicateSelected"
+          class="button small"
+          type="button"
+        >
+          Duplicate
+        </button>
+
+        <button
+          id="bringForward"
+          class="button small"
+          type="button"
+        >
+          ↑
+        </button>
+
+        <button
+          id="sendBackward"
+          class="button small"
+          type="button"
+        >
+          ↓
+        </button>
+
+        <button
+          id="gridToggle"
+          class="button small"
+          type="button"
+          aria-pressed="true"
+        >
+          Grid
+        </button>
+
+        <button
+          id="snapToggle"
+          class="button small"
+          type="button"
+          aria-pressed="true"
+        >
+          Snap
+        </button>
+
+      </div>
+
+
+      <!-- =====================================================
+           CANVAS
+           ===================================================== -->
+
+      <div
+        id="canvas"
+        class="canvas"
+        tabindex="0"
+      >
+
+        <div
+          id="canvasInner"
+          class="canvas-inner"
+        >
+
+          <!-- SVG CONNECTION LAYER -->
+
+          <svg
+            id="edges"
+            class="edges"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+
+            <defs>
+
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path
+                  d="M 0 0 L 10 5 L 0 10 z"
+                  fill="currentColor"
+                />
+              </marker>
+
+              <marker
+                id="arrowhead-start"
+                markerWidth="10"
+                markerHeight="10"
+                refX="2"
+                refY="5"
+                orient="auto-start-reverse"
+                markerUnits="strokeWidth"
+              >
+                <path
+                  d="M 0 0 L 10 5 L 0 10 z"
+                  fill="currentColor"
+                />
+              </marker>
+
+            </defs>
+
+          </svg>
+
+
+          <!-- NODE / OBJECT LAYER -->
+
+          <div
+            id="nodes"
+            class="nodes"
+          ></div>
+
+
+          <!-- EMPTY CANVAS MESSAGE -->
+
+          <div
+            id="canvasEmpty"
+            class="canvas-empty"
+          >
+            Drag components here or insert an image to begin.
+          </div>
+
+
+          <!-- MULTI-SELECTION BOX -->
+
+          <div
+            id="selectionBox"
+            class="selection-box hidden"
+          ></div>
+
+
+          <!-- FLOATING TOOLBAR -->
+
+          <div
+            id="floatingToolbar"
+            class="floating-toolbar hidden"
+          >
+
+            <button
+              id="floatingCopy"
+              type="button"
+              title="Copy"
+            >
+              ⧉
+            </button>
+
+            <button
+              id="floatingDuplicate"
+              type="button"
+              title="Duplicate"
+            >
+              ⧤
+            </button>
+
+            <button
+              id="floatingDelete"
+              type="button"
+              title="Delete"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <!-- CONTEXT MENU -->
+
+          <div
+            id="contextMenu"
+            class="context-menu hidden"
+          >
+
+            <button
+              data-context-action="copy"
+              type="button"
+            >
+              Copy
+            </button>
+
+            <button
+              data-context-action="paste"
+              type="button"
+            >
+              Paste
+            </button>
+
+            <button
+              data-context-action="duplicate"
+              type="button"
+            >
+              Duplicate
+            </button>
+
+            <button
+              data-context-action="group"
+              type="button"
+            >
+              Group
+            </button>
+
+            <button
+              data-context-action="ungroup"
+              type="button"
+            >
+              Ungroup
+            </button>
+
+            <button
+              data-context-action="delete"
+              class="danger-item"
+              type="button"
+            >
+              Delete
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- ===================================================
+             ZOOM
+             =================================================== -->
+
+        <div class="zoom-controls">
 
           <button
             id="zoomOut"
-            class="toolbar-button"
+            type="button"
             title="Zoom out"
           >
             −
@@ -439,22 +1263,30 @@
 
           <span
             id="zoomLevel"
-            class="zoom-label"
+            class="zoom-level"
           >
             100%
           </span>
 
           <button
             id="zoomIn"
-            class="toolbar-button"
+            type="button"
             title="Zoom in"
           >
             +
           </button>
 
           <button
+            id="resetZoom"
+            type="button"
+            title="Reset zoom"
+          >
+            1:1
+          </button>
+
+          <button
             id="fitCanvas"
-            class="toolbar-button"
+            type="button"
             title="Fit diagram"
           >
             Fit
@@ -462,783 +1294,203 @@
 
         </div>
 
-
-        <div class="toolbar-divider"></div>
-
-
-        <div class="toolbar-group">
-
-          <button
-            id="bringForward"
-            class="toolbar-button"
-            title="Bring forward"
-          >
-            ↑
-          </button>
-
-          <button
-            id="sendBackward"
-            class="toolbar-button"
-            title="Send backward"
-          >
-            ↓
-          </button>
-
-          <button
-            id="groupObjects"
-            class="toolbar-button"
-            title="Group selected objects"
-          >
-            Group
-          </button>
-
-          <button
-            id="ungroupObjects"
-            class="toolbar-button"
-            title="Ungroup selected objects"
-          >
-            Ungroup
-          </button>
-
-        </div>
-
-
-        <div class="toolbar-divider"></div>
-
-
-        <div class="toolbar-group">
-
-          <button
-            id="copyObjects"
-            class="toolbar-button"
-            title="Copy selected objects"
-          >
-            Copy
-          </button>
-
-          <button
-            id="pasteObjects"
-            class="toolbar-button"
-            title="Paste copied objects"
-          >
-            Paste
-          </button>
-
-          <button
-            id="duplicateObjects"
-            class="toolbar-button"
-            title="Duplicate selected objects"
-          >
-            Duplicate
-          </button>
-
-          <button
-            id="deleteObjects"
-            class="toolbar-button danger-text"
-            title="Delete selected objects"
-          >
-            Delete
-          </button>
-
-        </div>
-
-
-        <div class="toolbar-spacer"></div>
-
-
-        <div class="toolbar-group">
-
-          <button
-            id="gridToggle"
-            class="toolbar-button active"
-            aria-pressed="true"
-          >
-            Grid
-          </button>
-
-          <button
-            id="snapToggle"
-            class="toolbar-button active"
-            aria-pressed="true"
-          >
-            Snap
-          </button>
-
-        </div>
-
       </div>
 
 
-      <!-- =======================================================
-           CANVAS
-           ======================================================= -->
+      <!-- =====================================================
+           STATUS
+           ===================================================== -->
 
       <div
-        id="canvasViewport"
-        class="canvas-viewport"
+        id="status"
+        class="status"
       >
-
-        <div
-          id="canvas"
-          class="canvas"
-          tabindex="0"
-          aria-label="Architecture diagram canvas"
-        >
-
-          <!-- SVG connector layer -->
-          <svg
-            id="connectorLayer"
-            class="connector-layer"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-
-              <marker
-                id="arrow-default"
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="5"
-                markerWidth="7"
-                markerHeight="7"
-                orient="auto"
-              >
-                <path
-                  d="M 0 0 L 10 5 L 0 10 Z"
-                />
-              </marker>
-
-              <marker
-                id="arrow-open"
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="5"
-                markerWidth="7"
-                markerHeight="7"
-                orient="auto"
-              >
-                <path
-                  d="M 1 1 L 9 5 L 1 9"
-                  fill="none"
-                />
-              </marker>
-
-            </defs>
-
-            <g id="connectors"></g>
-
-            <g id="connectorControls"></g>
-
-          </svg>
-
-
-          <!-- Canvas objects -->
-          <div
-            id="objectsLayer"
-            class="objects-layer"
-          ></div>
-
-
-          <!-- Selection layer -->
-          <div
-            id="selectionLayer"
-            class="selection-layer"
-          ></div>
-
-
-          <!-- Temporary connector while drawing -->
-          <svg
-            id="interactionLayer"
-            class="interaction-layer"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              id="temporaryConnector"
-              hidden
-            />
-          </svg>
-
-
-          <!-- Empty canvas message -->
-          <div
-            id="canvasEmpty"
-            class="canvas-empty"
-          >
-            <div class="empty-icon">
-              ◇
-            </div>
-
-            <strong>
-              Start building your architecture
-            </strong>
-
-            <span>
-              Drag a component, shape or image onto the canvas
-            </span>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- =======================================================
-           STATUS BAR
-           ======================================================= -->
-
-      <div class="status-bar">
-
-        <div
-          id="status"
-          class="status-message"
-        >
-          Ready
-        </div>
-
-        <div class="status-right">
-
-          <span id="selectionStatus">
-            0 selected
-          </span>
-
-          <span class="status-separator">
-            |
-          </span>
-
-          <span id="objectCount">
-            0 objects
-          </span>
-
-          <span class="status-separator">
-            |
-          </span>
-
-          <span id="connectionCount">
-            0 connections
-          </span>
-
-        </div>
-
+        Ready.
       </div>
 
     </section>
 
 
-    <!-- =========================================================
-         RIGHT INSPECTOR
-         ========================================================= -->
+    <!-- =======================================================
+         INSPECTOR
+         ======================================================= -->
 
-    <aside class="right-sidebar">
+    <aside
+      id="inspector"
+      class="sidebar inspector-panel"
+    >
 
-      <!-- =======================================================
-           INSPECTOR HEADER
-           ======================================================= -->
+      <div
+        id="inspectorEmpty"
+        class="inspector-empty"
+      >
 
-      <div class="inspector-header">
+        <h2>
+          Inspector
+        </h2>
 
-        <div>
-          <div class="section-title">
-            Inspector
-          </div>
-
-          <div
-            id="inspectorSelectionType"
-            class="inspector-subtitle"
-          >
-            Nothing selected
-          </div>
-        </div>
+        <p class="hint">
+          Select a component, image, shape, connector or annotation to edit it.
+        </p>
 
       </div>
 
 
-      <!-- =======================================================
-           OBJECT PROPERTIES
-           ======================================================= -->
-
-      <section
-        id="objectInspector"
-        class="inspector-section"
-        hidden
+      <div
+        id="inspectorContent"
+        class="hidden"
       >
 
-        <div class="inspector-section-title">
-          Object
-        </div>
+        <h2>
+          Inspector
+        </h2>
 
-        <label class="field">
-          <span>Name</span>
 
-          <input
-            id="propertyName"
-            type="text"
-            placeholder="Object name"
-          />
-        </label>
+        <!-- NODE PROPERTIES -->
 
+        <section class="inspector-section">
 
-        <label class="field">
-          <span>Type</span>
+          <form id="inspectorForm">
 
-          <input
-            id="propertyType"
-            type="text"
-            disabled
-          />
-        </label>
+            <label>
 
+              Label
 
-        <label class="field">
-          <span>Environment</span>
+              <input
+                id="nodeLabel"
+                type="text"
+                placeholder="Component name"
+              />
 
-          <select id="propertyEnvironment">
+            </label>
 
-            <option value="Production">
-              Production
-            </option>
+            <label>
 
-            <option value="Non-production">
-              Non-production
-            </option>
+              Type
 
-            <option value="Shared">
-              Shared
-            </option>
+              <input
+                id="nodeType"
+                type="text"
+                placeholder="Component type"
+              />
 
-            <option value="External">
-              External
-            </option>
+            </label>
 
-          </select>
+            <label>
 
-        </label>
+              Environment
 
+              <select id="nodeEnvironment">
 
-        <label class="field">
-          <span>Owner</span>
+                <option value="">
+                  Select environment
+                </option>
 
-          <input
-            id="propertyOwner"
-            type="text"
-            placeholder="Platform team"
-          />
-        </label>
+                <option value="Development">
+                  Development
+                </option>
 
+                <option value="Test">
+                  Test
+                </option>
 
-        <label class="field">
-          <span>Description</span>
+                <option value="QA">
+                  QA
+                </option>
 
-          <textarea
-            id="propertyDescription"
-            rows="4"
-            placeholder="Purpose or implementation note"
-          ></textarea>
-        </label>
+                <option value="Staging">
+                  Staging
+                </option>
 
-      </section>
+                <option value="Production">
+                  Production
+                </option>
 
+              </select>
 
-      <!-- =======================================================
-           POSITION & SIZE
-           ======================================================= -->
+            </label>
 
-      <section
-        id="transformInspector"
-        class="inspector-section"
-        hidden
-      >
+            <label>
 
-        <div class="inspector-section-title">
-          Position & Size
-        </div>
+              Owner
 
-        <div class="two-column">
+              <input
+                id="nodeOwner"
+                type="text"
+                placeholder="Owner"
+              />
 
-          <label class="field">
-            <span>X</span>
+            </label>
 
-            <input
-              id="propertyX"
-              type="number"
-            />
-          </label>
+            <label>
 
-          <label class="field">
-            <span>Y</span>
+              Description
 
-            <input
-              id="propertyY"
-              type="number"
-            />
-          </label>
+              <textarea
+                id="nodeDescription"
+                rows="5"
+                placeholder="Purpose or implementation note"
+              ></textarea>
 
-          <label class="field">
-            <span>Width</span>
+            </label>
 
-            <input
-              id="propertyWidth"
-              type="number"
-              min="10"
-            />
-          </label>
+            <label>
 
-          <label class="field">
-            <span>Height</span>
+              Data flow label
 
-            <input
-              id="propertyHeight"
-              type="number"
-              min="10"
-            />
-          </label>
+              <input
+                id="edgeLabel"
+                type="text"
+                placeholder="e.g. REST API / OAuth 2.0"
+              />
 
-        </div>
+            </label>
 
-      </section>
+          </form>
 
+        </section>
 
-      <!-- =======================================================
-           APPEARANCE
-           ======================================================= -->
 
-      <section
-        id="appearanceInspector"
-        class="inspector-section"
-        hidden
-      >
+        <!-- VALIDATION -->
 
-        <div class="inspector-section-title">
-          Appearance
-        </div>
+        <section class="inspector-section">
 
+          <h2>
+            Validation
+          </h2>
 
-        <label class="field">
-          <span>Fill</span>
-
-          <input
-            id="propertyFill"
-            type="color"
-            value="#ffffff"
-          />
-        </label>
-
-
-        <label class="field">
-          <span>Border</span>
-
-          <input
-            id="propertyStroke"
-            type="color"
-            value="#64748b"
-          />
-        </label>
-
-
-        <label class="field">
-          <span>Border width</span>
-
-          <input
-            id="propertyStrokeWidth"
-            type="number"
-            min="0"
-            max="20"
-            value="2"
-          />
-        </label>
-
-
-        <label class="field">
-          <span>Opacity</span>
-
-          <input
-            id="propertyOpacity"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value="1"
-          />
-        </label>
-
-      </section>
-
-
-      <!-- =======================================================
-           CONNECTOR INSPECTOR
-           ======================================================= -->
-
-      <section
-        id="connectorInspector"
-        class="inspector-section"
-        hidden
-      >
-
-        <div class="inspector-section-title">
-          Connector
-        </div>
-
-
-        <label class="field">
-          <span>Connector type</span>
-
-          <select id="connectorType">
-
-            <option value="straight">
-              Straight
-            </option>
-
-            <option value="elbow">
-              Elbow
-            </option>
-
-            <option value="curved">
-              Curved
-            </option>
-
-            <option value="freeform">
-              Free-form
-            </option>
-
-            <option value="wavy">
-              Wavy
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label class="field">
-          <span>Line style</span>
-
-          <select id="connectorLineStyle">
-
-            <option value="solid">
-              Solid
-            </option>
-
-            <option value="dashed">
-              Dashed
-            </option>
-
-            <option value="dotted">
-              Dotted
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label class="field">
-          <span>Arrow start</span>
-
-          <select id="connectorStartArrow">
-
-            <option value="none">
-              None
-            </option>
-
-            <option value="arrow">
-              Arrow
-            </option>
-
-            <option value="open">
-              Open arrow
-            </option>
-
-            <option value="circle">
-              Circle
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label class="field">
-          <span>Arrow end</span>
-
-          <select id="connectorEndArrow">
-
-            <option value="arrow">
-              Arrow
-            </option>
-
-            <option value="none">
-              None
-            </option>
-
-            <option value="open">
-              Open arrow
-            </option>
-
-            <option value="circle">
-              Circle
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label class="field">
-          <span>Line width</span>
-
-          <input
-            id="connectorWidth"
-            type="number"
-            min="1"
-            max="20"
-            value="2"
-          />
-        </label>
-
-
-        <label class="field">
-          <span>Label</span>
-
-          <input
-            id="connectorLabel"
-            type="text"
-            placeholder="REST / HTTPS / Events"
-          />
-        </label>
-
-      </section>
-
-
-      <!-- =======================================================
-           IMAGE INSPECTOR
-           ======================================================= -->
-
-      <section
-        id="imageInspector"
-        class="inspector-section"
-        hidden
-      >
-
-        <div class="inspector-section-title">
-          Image
-        </div>
-
-        <p class="inspector-help">
-          Images are first-class canvas objects and can be used as
-          connection sources and destinations.
-        </p>
-
-
-        <label class="checkbox-field">
-
-          <input
-            id="imageConnectable"
-            type="checkbox"
-            checked
-          />
-
-          <span>
-            Allow connections
-          </span>
-
-        </label>
-
-
-        <button
-          id="addImagePort"
-          class="sidebar-action"
-        >
-          + Add connection point
-        </button>
-
-      </section>
-
-
-      <!-- =======================================================
-           COMMENT INSPECTOR
-           ======================================================= -->
-
-      <section
-        id="commentInspector"
-        class="inspector-section"
-        hidden
-      >
-
-        <div class="inspector-section-title">
-          Comment
-        </div>
-
-        <label class="field">
-
-          <span>
-            Comment
-          </span>
-
-          <textarea
-            id="commentText"
-            rows="5"
-            placeholder="Write a comment..."
-          ></textarea>
-
-        </label>
-
-      </section>
-
-
-      <!-- =======================================================
-           VALIDATION
-           ======================================================= -->
-
-      <section class="inspector-section">
-
-        <div class="inspector-section-title">
-          Validation
-        </div>
-
-        <button
-          id="validateDiagram"
-          class="sidebar-action"
-        >
-          Run architecture validation
-        </button>
-
-        <div
-          id="validationResults"
-          class="validation-results"
-        >
-          <p class="inspector-help">
+          <p class="hint">
             Run validation to check common architecture gaps.
           </p>
-        </div>
 
-      </section>
+          <div
+            id="validationResults"
+            class="validation-results"
+          ></div>
+
+        </section>
 
 
-      <!-- =======================================================
-           IMPACT ANALYSIS
-           ======================================================= -->
+        <!-- IMPACT -->
 
-      <section class="inspector-section">
+        <section class="inspector-section">
 
-        <div class="inspector-section-title">
-          Impact Analysis
-        </div>
+          <h2>
+            Impact
+          </h2>
 
-        <button
-          id="impactMode"
-          class="sidebar-action"
-        >
-          Enable impact mode
-        </button>
-
-        <div
-          id="impactResults"
-          class="impact-results"
-        >
-          <p class="inspector-help">
-            Select a component to view downstream dependencies.
+          <p class="hint">
+            Enable impact mode, then select a component.
           </p>
-        </div>
 
-      </section>
+          <div
+            id="impactResults"
+            class="impact-results"
+          ></div>
+
+        </section>
+
+      </div>
 
     </aside>
 
@@ -1246,69 +1498,67 @@
 
 
   <!-- =========================================================
-       CONTEXT MENU
+       HIDDEN FILE INPUTS
        ========================================================= -->
 
-  <div
-    id="contextMenu"
-    class="context-menu"
+  <input
+    id="imageFileInput"
+    type="file"
+    accept="image/*"
     hidden
-  >
-
-    <button data-action="copy">
-      Copy
-    </button>
-
-    <button data-action="paste">
-      Paste
-    </button>
-
-    <button data-action="duplicate">
-      Duplicate
-    </button>
-
-    <div class="context-divider"></div>
-
-    <button data-action="bringForward">
-      Bring forward
-    </button>
-
-    <button data-action="sendBackward">
-      Send backward
-    </button>
-
-    <div class="context-divider"></div>
-
-    <button data-action="delete">
-      Delete
-    </button>
-
-  </div>
+  />
 
 
   <!-- =========================================================
-       IMAGE DROP / PASTE OVERLAY
+       ARROW TOOL PANEL
        ========================================================= -->
 
   <div
-    id="dropOverlay"
-    class="drop-overlay"
-    hidden
+    id="arrowToolPanel"
+    class="arrow-tool-panel hidden"
   >
 
-    <div class="drop-message">
+    <div class="arrow-tool-grid">
 
-      <div class="drop-icon">
-        🖼
-      </div>
+      <button
+        class="arrow-tool-button"
+        data-edge-type="straight"
+        type="button"
+      >
+        Straight
+      </button>
 
-      <strong>
-        Drop image here
-      </strong>
+      <button
+        class="arrow-tool-button"
+        data-edge-type="elbow"
+        type="button"
+      >
+        Elbow
+      </button>
 
-      <span>
-        PNG, JPG, JPEG, SVG, WebP and other browser-supported images
-      </span>
+      <button
+        class="arrow-tool-button"
+        data-edge-type="curved"
+        type="button"
+      >
+        Curved
+      </button>
+
+      <button
+        class="arrow-tool-button"
+        data-edge-type="freeform"
+        type="button"
+      >
+        Free-form
+      </button>
+
+      <button
+        class="arrow-tool-button"
+        data-edge-type="wavy"
+        type="button"
+      >
+        Wavy
+      </button>
 
     </div>
 
@@ -1316,42 +1566,23 @@
 
 
   <!-- =========================================================
-       NOTIFICATION
-       ========================================================= -->
-
-  <div
-    id="toast"
-    class="toast"
-    role="status"
-    aria-live="polite"
-    hidden
-  >
-  </div>
-
-
-  <!-- =========================================================
        FOOTER
        ========================================================= -->
 
-  <footer class="app-footer">
+  <footer>
 
-    <span>
-      Coffee Break Catalyst
-    </span>
-
-    <span>
-      Architecture Diagram Builder
-    </span>
-
-    <span>
-      Local-first • .arch format
+    Coffee Break Catalyst
+    · Enterprise Architecture Diagram Builder
+    ·
+    <span id="footerVersion">
+      .arch enabled
     </span>
 
   </footer>
 
 
   <!-- =========================================================
-       APPLICATION SCRIPT
+       APPLICATION
        ========================================================= -->
 
   <script src="app.js"></script>
