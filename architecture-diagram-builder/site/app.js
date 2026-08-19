@@ -1,296 +1,551 @@
 (() => {
 "use strict";
 
+/* ---------- library ---------- */
 const CATALOG = [
-  ["cloud","☁️","Cloud"],
-  ["aks","☸️","AKS Cluster"],
-  ["vm","🖥️","Virtual Machine"],
-  ["api","⇄","API Gateway"],
-  ["app","▣","Application"],
-  ["database","▤","Database"],
-  ["servicenow","◉","ServiceNow"],
-  ["monitoring","◌","Monitoring"],
-  ["identity","🔐","Identity"],
-  ["storage","▱","Storage"],
-  ["internet","◎","Internet"],
-  ["queue","⇉","Message Queue"],
-  ["eventbus","⚡","Event Bus"],
-  ["function","ƒ","Function"],
-  ["container","▦","Container"],
-  ["firewall","🛡️","Firewall"],
-  ["loadbalancer","⚖️","Load Balancer"],
-  ["gateway","↔","Gateway"],
-  ["user","👤","User"],
-  ["mobile","📱","Mobile App"],
-  ["server","🗄️","Server"],
-  ["keyvault","🔑","Key Vault"],
-  ["logs","≋","Log Analytics"],
-  ["vector","◈","Vector DB"],
-  ["zone","▧","Security Zone"]
+  ["cloud","☁","Cloud"],["azure","◆","Microsoft Azure"],["aws","■","AWS"],["gcp","●","Google Cloud"],
+  ["region","◎","Cloud Region"],["az","▦","Availability Zone"],["vm","▣","Virtual Machine"],["server","▣","Server"],
+  ["container","⬡","Container"],["aks","✥","AKS Cluster"],["kubernetes","✤","Kubernetes"],["docker","◈","Docker"],
+  ["function","ƒ","Serverless Function"],["app","▣","Application"],["microservice","◇","Microservice"],["internet","◎","Internet"],
+  ["api","⇄","API Gateway"],["gateway","↔","Gateway"],["loadbalancer","⚖","Load Balancer"],["firewall","▤","Firewall"],
+  ["waf","◫","Web Application Firewall"],["vpn","⌁","VPN Gateway"],["dns","⌁","DNS"],["cdn","◉","CDN"],
+  ["database","▤","Database"],["sql","▥","SQL Database"],["nosql","▧","NoSQL Database"],["storage","▱","Object Storage"],
+  ["cache","▤","Cache"],["queue","⇉","Message Queue"],["eventbus","⚡","Event Bus"],["stream","≋","Event Stream"],
+  ["servicenow","◉","ServiceNow"],["monitoring","◌","Monitoring"],["logs","≋","Log Analytics"],["siem","◉","SIEM"],
+  ["identity","🔑","Identity Provider"],["keyvault","◆","Secrets / Key Vault"],["policy","▤","Policy"],["user","●","User"],
+  ["mobile","▯","Mobile App"],["desktop","▣","Desktop App"],["network","⌁","Network"],["subnet","□","Subnet"],
+  ["router","↔","Router"],["switch","⇄","Switch"],["storageacct","▱","Storage Account"],["vector","◈","Vector DB"],
+  ["llm","✦","LLM / AI Model"],["rag","⌁","RAG Service"],["agent","✦","AI Agent"],["zone","▧","Security Zone"]
 ];
-
 const $ = id => document.getElementById(id);
-const canvas = $("canvas"), inner = $("canvasInner"), nodesEl = $("nodes"), edgesEl = $("edges");
-const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
-const esc = s => String(s ?? "").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-const iconFor = t => (CATALOG.find(x=>x[0]===t)||["","◇"])[1];
-const nameFor = t => (CATALOG.find(x=>x[0]===t)||["","",t])[2];
+const canvas=$("canvas"), inner=$("canvasInner"), nodesEl=$("nodes"), edgesEl=$("edges");
+const uid=()=>`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
+const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+const libName=t=>(CATALOG.find(x=>x[0]===t)||["","◇",t])[2];
+const libIcon=t=>(CATALOG.find(x=>x[0]===t)||["","◇",t])[1];
 
-let model = {version:2,name:"Untitled architecture",items:[],edges:[]};
-let selected = new Set(), tool="select", connector="straight", lineStyle="solid";
-let connectSource=null, drag=null, drawing=null, zoom=1, undoStack=[], redoStack=[], impact=false;
+let model={version:4,name:"Untitled architecture",items:[],edges:[]};
+let selected=new Set(), selectedEdge=null, tool="select", connector="straight", lineStyle="solid";
+let drawing=null, drag=null, edgeDrag=null, zoom=1, impact=false, undoStack=[], redoStack=[];
 
-function snapshot(){ return JSON.stringify(model); }
-function commit(){
-  undoStack.push(snapshot()); if(undoStack.length>60) undoStack.shift(); redoStack=[];
+/* ---------- history ---------- */
+function snap(){return JSON.stringify(model)}
+function commit(){undoStack.push(snap());if(undoStack.length>80)undoStack.shift();redoStack=[]}
+function undo(){if(!undoStack.length)return;redoStack.push(snap());model=JSON.parse(undoStack.pop());selected.clear();selectedEdge=null;render();status("Undo")}
+function redo(){if(!redoStack.length)return;undoStack.push(snap());model=JSON.parse(redoStack.pop());selected.clear();selectedEdge=null;render();status("Redo")}
+function status(s){$("status").textContent=s}
+function getItem(id){return model.items.find(n=>n.id===id)}
+function getEdge(id){return model.edges.find(e=>e.id===id)}
+function centerOf(n){return[n.x+n.width/2,n.y+n.height/2]}
+
+/* ---------- coordinates ---------- */
+function canvasPoint(clientX,clientY){
+ const r=canvas.getBoundingClientRect();
+ return [(clientX-r.left+canvas.scrollLeft)/zoom,(clientY-r.top+canvas.scrollTop)/zoom];
 }
-function restore(s){ model=JSON.parse(s); selected.clear(); render(); }
-function setStatus(s){ $("status").textContent=s; }
-function item(id){ return model.items.find(x=>x.id===id); }
-function isVisual(x){ return x && ["node","image","sticky","comment","pin","text"].includes(x.kind); }
-
-function addItem(kind,x,y,opts={}){
-  const o={id:uid(),kind,x,y,width:opts.width||150,height:opts.height||76,label:opts.label||"Item",
-    type:opts.type||"rectangle",environment:opts.environment||"Production",owner:opts.owner||"",
-    description:opts.description||"",rotation:opts.rotation||0,fill:opts.fill||"#ffffff",stroke:opts.stroke||"#64748b",
-    text:opts.text||"",src:opts.src||"",z:opts.z||10};
-  if(kind==="node"){o.label=opts.label||nameFor(opts.type||"app");o.type=opts.type||"app";}
-  if(kind==="sticky"){o.width=180;o.height=150;o.text=opts.text||"Sticky note";}
-  if(kind==="comment"){o.width=220;o.height=90;o.text=opts.text||"Comment";}
-  if(kind==="pin"){o.width=28;o.height=28;o.label="📌";}
-  if(kind==="text"){o.width=220;o.height=45;o.text=opts.text||"Text";}
-  if(kind==="image"){o.width=220;o.height=160;}
-  model.items.push(o); selected.clear(); selected.add(o.id); render(); return o;
-}
-
-function portPoint(n,port){
-  const cx=n.x+n.width/2,cy=n.y+n.height/2;
-  if(port==="top") return [cx,n.y];
-  if(port==="right") return [n.x+n.width,cy];
-  if(port==="bottom") return [cx,n.y+n.height];
-  return [n.x,cy];
+function portPoint(n,p){
+ const [cx,cy]=centerOf(n);
+ return p==="top"?[cx,n.y]:p==="right"?[n.x+n.width,cy]:p==="bottom"?[cx,n.y+n.height]:[n.x,cy];
 }
 function nearestPort(n,x,y){
-  const ps=["top","right","bottom","left"];
-  let best="right",bd=Infinity;
-  ps.forEach(p=>{const [a,b]=portPoint(n,p),d=(a-x)**2+(b-y)**2;if(d<bd){bd=d;best=p;}});
-  return best;
+ let best="right",d=Infinity;
+ ["top","right","bottom","left"].forEach(p=>{
+   const q=portPoint(n,p),dd=(q[0]-x)**2+(q[1]-y)**2;
+   if(dd<d){d=dd;best=p}
+ });
+ return best;
 }
-function pathFor(e){
-  const a=item(e.from),b=item(e.to); if(!a||!b)return "";
-  const [x1,y1]=portPoint(a,e.fromPort||"right"),[x2,y2]=portPoint(b,e.toPort||"left");
-  if(e.type==="elbow"){const mx=(x1+x2)/2;return `M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2} ${y2}`;}
-  if(e.type==="curved"){const dx=Math.max(50,Math.abs(x2-x1)*.45);return `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`;}
-  if(e.type==="wavy"){const steps=12,dx=(x2-x1)/steps,dy=(y2-y1)/steps;let d=`M ${x1} ${y1}`;for(let i=1;i<=steps;i++){const x=x1+dx*i,y=y1+dy*i+Math.sin(i*Math.PI)*10*((i%2)?1:-1);d+=` L ${x} ${y}`;}return d;}
-  if(e.type==="freeform" && e.points?.length){return e.points.map((p,i)=>`${i?"L":"M"} ${p[0]} ${p[1]}`).join(" ");}
-  return `M ${x1} ${y1} L ${x2} ${y2}`;
+function objectAt(clientX,clientY){
+ const el=document.elementFromPoint(clientX,clientY)?.closest(".node");
+ return el?getItem(el.dataset.id):null;
 }
+
+/* ---------- items ---------- */
+function addItem(kind,x,y,o={}){
+ const n={
+   id:uid(),kind,x,y,width:o.width||150,height:o.height||76,z:o.z||10,
+   label:o.label||"Item",type:o.type||"app",environment:o.environment||"Production",
+   owner:o.owner||"",description:o.description||"",rotation:o.rotation||0,
+   fill:o.fill||"#ffffff",stroke:o.stroke||"#64748b",text:o.text||"",src:o.src||"",
+   shape:o.shape||null
+ };
+ if(kind==="node") n.label=o.label||libName(n.type);
+ if(kind==="shape"){n.width=o.width||170;n.height=o.height||100;n.shape=o.shape||"rectangle";n.label=o.label||n.shape[0].toUpperCase()+n.shape.slice(1)}
+ if(kind==="image"){n.width=o.width||240;n.height=o.height||170}
+ if(kind==="sticky"){n.width=180;n.height=150;n.text=o.text||"Double-click to edit"}
+ if(kind==="comment"){n.width=220;n.height=90;n.text=o.text||"Comment"}
+ if(kind==="pin"){n.width=28;n.height=28;n.label="📌"}
+ if(kind==="text"){n.width=240;n.height=45;n.text=o.text||"Double-click to edit"}
+ model.items.push(n);selected.clear();selected.add(n.id);selectedEdge=null;render();return n;
+}
+
+/* ---------- rendering ---------- */
 function markerDefs(){
- return `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>`;
+ return `<defs>
+ <marker id="m-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+ <marker id="m-circle" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6"><circle cx="5" cy="5" r="3" fill="context-stroke"/></marker>
+ <marker id="m-diamond" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7"><path d="M5 0L10 5L5 10L0 5z" fill="context-stroke"/></marker>
+ </defs>`;
 }
-
+function markerAttr(e,which){
+ const v=e[which+"Marker"]||"none";
+ return v==="none"?"":` marker-${which}="url(#m-${v})"`;
+}
+function edgePath(e){
+ const a=getItem(e.from),b=getItem(e.to);
+ if(!a||!b)return"";
+ const [x1,y1]=portPoint(a,e.fromPort||"right"),[x2,y2]=portPoint(b,e.toPort||"left");
+ if(e.type==="freeform" && e.points?.length) return e.points.map((p,i)=>`${i?"L":"M"} ${p[0]} ${p[1]}`).join(" ");
+ if(e.type==="curved"){
+   const c=e.controls?.length===2?e.controls:[[x1+(x2-x1)*.35,y1],[x1+(x2-x1)*.65,y2]];
+   return `M ${x1} ${y1} C ${c[0][0]} ${c[0][1]}, ${c[1][0]} ${c[1][1]}, ${x2} ${y2}`;
+ }
+ if(e.type==="wavy"){
+   const steps=Math.max(12,Math.min(36,Math.round(Math.hypot(x2-x1,y2-y1)/35)));
+   const dx=(x2-x1)/steps,dy=(y2-y1)/steps,len=Math.hypot(x2-x1,y2-y1)||1,nx=-dy/len*12,ny=dx/len*12;
+   let d=`M ${x1} ${y1}`;
+   for(let i=1;i<=steps;i++){const t=i/steps,s=Math.sin(t*Math.PI*e.waves*2)*(i===steps?0:1);d+=` L ${x1+dx*i+nx*s} ${y1+dy*i+ny*s}`}
+   return d;
+ }
+ if(e.type==="elbow"){
+   const mx=e.midX??(x1+x2)/2;
+   return `M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2} ${y2}`;
+ }
+ return `M ${x1} ${y1} L ${x2} ${y2}`;
+}
+function edgeLabelPos(e){
+ const a=getItem(e.from),b=getItem(e.to);if(!a||!b)return[0,0];
+ const [x1,y1]=portPoint(a,e.fromPort||"right"),[x2,y2]=portPoint(b,e.toPort||"left");
+ return[(x1+x2)/2,(y1+y2)/2-8];
+}
 function renderEdges(){
- edgesEl.setAttribute("viewBox","0 0 3000 2000");
- const impacts=impact&&selected.size?[...downstream([...selected][0])]:[];
- edgesEl.innerHTML=markerDefs()+model.edges.map(e=>{
-   const active=selected.has(e.from)||impacts.includes(e.to);
-   const dash=e.style==="dashed"?"dashed":e.style==="dotted"?"dotted":"";
-   return `<path class="edge ${active?"selected":""} ${dash}" data-id="${e.id}" d="${pathFor(e)}" marker-end="url(#arrow)"></path>`+
-     (e.label?`<text class="edge-label" x="${labelX(e)}" y="${labelY(e)}">${esc(e.label)}</text>`:"");
- }).join("");
+ edgesEl.innerHTML=markerDefs();
+ const impacted=impact&&selected.size?new Set(downstream([...selected][0])):new Set();
+ model.edges.forEach(e=>{
+   const d=edgePath(e),sel=selectedEdge===e.id||selected.has(e.from)&&selected.has(e.to);
+   const cls=`edge ${sel?"selected ":""}${impacted.has(e.to)?"impact ":""}`;
+   const dash=e.style==="dashed"?"stroke-dasharray:8 5;":e.style==="dotted"?"stroke-dasharray:2 5;":"";
+   const common=`data-edge-id="${e.id}" d="${d}" stroke="${e.color||"#52627a"}" stroke-width="${e.width||2}" style="${dash}"${markerAttr(e,"start")}${markerAttr(e,"end")}`;
+   edgesEl.insertAdjacentHTML("beforeend",`<path class="edge-hit" data-edge-id="${e.id}" d="${d}"></path><path class="${cls}" ${common}></path>`);
+   if(e.label){const [x,y]=edgeLabelPos(e);edgesEl.insertAdjacentHTML("beforeend",`<text class="edge-label" x="${x}" y="${y}">${esc(e.label)}</text>`)}
+   if(selectedEdge===e.id){
+     if(e.type==="curved"&&e.controls?.length===2)e.controls.forEach((p,i)=>edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="5"></circle>`));
+     if(e.type==="freeform"&&e.points?.length)e.points.forEach((p,i)=>{if(i>0&&i<e.points.length-1)edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="4"></circle>`)});
+     if(e.type==="elbow"){const a=getItem(e.from),b=getItem(e.to);if(a&&b)edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-mid="${e.id}" cx="${e.midX??((portPoint(a,e.fromPort||"right")[0]+portPoint(b,e.toPort||"left")[0])/2)}" cy="${((portPoint(a,e.fromPort||"right")[1]+portPoint(b,e.toPort||"left")[1])/2)}" r="5"></circle>`)}
+   }
+ });
+ if(drawing?.points?.length){
+   const s=drawing.source;
+   let d;
+   if(s)d=`M ${portPoint(s,drawing.sourcePort)[0]} ${portPoint(s,drawing.sourcePort)[1]} `+drawing.points.map(p=>`L ${p[0]} ${p[1]}`).join(" ");
+   else d=drawing.points.map((p,i)=>`${i?"L":"M"} ${p[0]} ${p[1]}`).join(" ");
+   edgesEl.insertAdjacentHTML("beforeend",`<path class="edge selected" d="${d}" stroke="${lineColor()}" stroke-width="${lineWidth()}" marker-end="url(#m-arrow)"></path>`);
+ }
 }
-function labelX(e){const a=item(e.from),b=item(e.to);return a&&b?(a.x+a.width+b.x)/2:0}
-function labelY(e){const a=item(e.from),b=item(e.to);return a&&b?(a.y+a.height/2+b.y+b.height/2)/2-7:0}
-
 function renderItem(n){
  const el=document.createElement("div");
- el.dataset.id=n.id; el.className=`node ${n.kind==="image"?"image-node":""} ${n.type||""} ${selected.has(n.id)?"selected":""} ${n.kind==="text"?"text-node":""}`;
- el.style.left=n.x+"px";el.style.top=n.y+"px";el.style.width=n.width+"px";el.style.height=n.height+"px";el.style.zIndex=n.z||10;
- el.style.transform=`rotate(${n.rotation||0}deg)`;el.style.background=n.fill;el.style.borderColor=n.stroke;
- if(n.kind==="image") el.innerHTML=`<img src="${esc(n.src)}" alt="${esc(n.label)}">`;
- else if(n.kind==="sticky") el.className="sticky-note "+(selected.has(n.id)?"selected":""),el.innerHTML=`<textarea>${esc(n.text)}</textarea>`;
- else if(n.kind==="comment") el.className="comment-node "+(selected.has(n.id)?"selected":""),el.innerHTML=`<strong>Comment</strong><div>${esc(n.text)}</div>`;
- else if(n.kind==="pin") el.className="pin-node "+(selected.has(n.id)?"selected":""),el.textContent="📌";
- else if(n.kind==="text") el.innerHTML=`<div class="node-content">${esc(n.text)}</div>`;
- else el.innerHTML=`<div class="node-content"><span class="node-icon">${iconFor(n.type)}</span><span class="node-type">${esc(nameFor(n.type))}</span><span class="node-title">${esc(n.label)}</span><span class="node-meta">${esc(n.environment)}${n.owner?" · "+esc(n.owner):""}</span></div>`;
- if(["node","image","shape"].includes(n.kind)||n.kind==="text"){
-   ["top","right","bottom","left"].forEach(p=>{const q=document.createElement("span");q.className=`connection-port ${p}`;q.dataset.port=p;el.append(q);});
+ const selectedNow=selected.has(n.id);
+ el.dataset.id=n.id;el.style.left=n.x+"px";el.style.top=n.y+"px";el.style.width=n.width+"px";el.style.height=n.height+"px";el.style.zIndex=n.z;
+ el.style.transform=`rotate(${n.rotation||0}deg)`;
+ el.style.background=n.fill||"#fff";el.style.borderColor=n.stroke||"#64748b";
+ if(n.kind==="shape"){
+   el.className=`node shape-node shape-${n.shape} ${selectedNow?"selected":""}`;
+   el.innerHTML=`<span class="shape-label">${esc(n.label)}</span>`;
+ }else if(n.kind==="image"){
+   el.className=`node image-node ${selectedNow?"selected":""}`;
+   el.innerHTML=`<img src="${esc(n.src)}" alt="${esc(n.label)}"><span class="shape-label image-caption">${esc(n.label)}</span>`;
+ }else if(n.kind==="sticky"){
+   el.className=`sticky-note ${selectedNow?"selected":""}`;
+   el.innerHTML=`<textarea>${esc(n.text)}</textarea>`;
+ }else if(n.kind==="comment"){
+   el.className=`comment-node ${selectedNow?"selected":""}`;
+   el.innerHTML=`<strong>Comment</strong><div>${esc(n.text)}</div>`;
+ }else if(n.kind==="pin"){
+   el.className=`pin-node ${selectedNow?"selected":""}`;el.textContent="📌";
+ }else if(n.kind==="text"){
+   el.className=`node text-node ${selectedNow?"selected":""}`;el.innerHTML=`<div>${esc(n.text)}</div>`;
+ }else{
+   el.className=`node ${selectedNow?"selected":""}`;
+   el.innerHTML=`<div class="node-content"><span class="node-icon">${libIcon(n.type)}</span><span class="node-type">${esc(libName(n.type))}</span><span class="node-title">${esc(n.label)}</span><span class="node-meta">${esc(n.environment)}${n.owner?" · "+esc(n.owner):""}</span></div>`;
  }
- ["nw","ne","sw","se"].forEach(p=>{const h=document.createElement("span");h.className=`resize-handle ${p}`;h.dataset.resize=p;el.append(h);});
- el.addEventListener("pointerdown",onItemDown); el.addEventListener("click",e=>e.stopPropagation());
- if(n.kind==="sticky") el.querySelector("textarea").addEventListener("input",e=>{n.text=e.target.value});
- nodesEl.append(el);
+ if(["node","shape","image","text"].includes(n.kind)){
+   ["top","right","bottom","left"].forEach(p=>{
+     const q=document.createElement("span");q.className=`connection-port ${p}`;q.dataset.port=p;el.appendChild(q)
+   });
+ }
+ ["nw","ne","sw","se"].forEach(p=>{const h=document.createElement("span");h.className=`resize-handle ${p}`;h.dataset.resize=p;el.appendChild(h)});
+ el.addEventListener("pointerdown",onItemPointerDown);
+ el.addEventListener("dblclick",()=>editItem(n));
+ if(n.kind==="sticky")el.querySelector("textarea").addEventListener("input",ev=>n.text=ev.target.value);
+ nodesEl.appendChild(el);
 }
-
+function renderInspector(){
+ const n=selected.size===1?getItem([...selected][0]):null;
+ $("inspectorEmpty").hidden=!!n||!!selectedEdge;
+ $("inspector").hidden=!n;
+ $("edgeInspector").hidden=!selectedEdge;
+ if(n){
+   $("nodeLabel").value=n.label||n.text||"";
+   $("nodeType").value=n.kind==="node"?libName(n.type):n.kind==="shape"?`Shape: ${n.shape}`:n.kind;
+   $("nodeEnvironment").value=n.environment||"Production";$("nodeOwner").value=n.owner||"";
+   $("nodeDescription").value=n.description||"";$("nodeWidth").value=Math.round(n.width);$("nodeHeight").value=Math.round(n.height);
+   $("nodeRotation").value=n.rotation||0;$("nodeFill").value=n.fill?.startsWith("#")?n.fill:"#ffffff";$("nodeStroke").value=n.stroke?.startsWith("#")?n.stroke:"#64748b";
+ }
+ if(selectedEdge){
+   const e=getEdge(selectedEdge);
+   if(e){$("edgeLabelInspector").value=e.label||"";$("edgeStyleInspector").value=e.style||"solid";$("edgeWidthInspector").value=e.width||2;$("edgeColorInspector").value=e.color||"#52627a";
+      $("lineStyle").value=e.style||"solid";$("lineWidth").value=e.width||2;$("lineColor").value=e.color||"#52627a";$("edgeLabel").value=e.label||"";}
+ }
+}
 function render(){
  $("diagramName").value=model.name;
  nodesEl.innerHTML="";
  model.items.slice().sort((a,b)=>(a.z||10)-(b.z||10)).forEach(renderItem);
- renderEdges();
+ renderEdges();renderInspector();
  $("canvasEmpty").style.display=model.items.length?"none":"block";
- $("inspectorEmpty").hidden=selected.size>0; $("inspector").hidden=selected.size!==1;
- if(selected.size===1) renderInspector(item([...selected][0]));
- $("impactResults").innerHTML=selected.size&&impact?downstream([...selected][0]).map(id=>item(id)).filter(Boolean).map(n=>`<div class="finding">${esc(n.label||n.text||n.kind)} is downstream.</div>`).join("")||'<div class="finding ok">No downstream dependencies.</div>':'<p class="hint">Enable Impact and select a component.</p>';
- updateZoomUI();
+ renderImpact();updateZoom();
 }
 
-function renderInspector(n){
- $("nodeLabel").value=n.label||"";
- $("nodeType").value=n.kind==="node"?nameFor(n.type):n.kind;
- $("nodeEnvironment").value=n.environment||"Production";
- $("nodeOwner").value=n.owner||"";
- $("nodeDescription").value=n.description||"";
- $("nodeWidth").value=Math.round(n.width);
- $("nodeHeight").value=Math.round(n.height);
- $("nodeRotation").value=n.rotation||0;
- $("nodeFill").value=n.fill?.startsWith("#")?n.fill:"#ffffff";
- $("nodeStroke").value=n.stroke?.startsWith("#")?n.stroke:"#64748b";
-}
-
-function updateSelectedFromInspector(){
- if(selected.size!==1)return;const n=item([...selected][0]);if(!n)return;
- n.label=$("nodeLabel").value;n.environment=$("nodeEnvironment").value;n.owner=$("nodeOwner").value;n.description=$("nodeDescription").value;
- n.width=Math.max(30,+$("nodeWidth").value||30);n.height=Math.max(30,+$("nodeHeight").value||30);n.rotation=+$("nodeRotation").value||0;n.fill=$("nodeFill").value;n.stroke=$("nodeStroke").value;render();
-}
-
-function selectOnly(id,add=false){if(!add)selected.clear();if(id)selected.add(id);render();}
-
-function onItemDown(e){
- if(e.button!==0)return;
- const el=e.currentTarget,n=item(el.dataset.id);
- if(e.target.dataset.resize){startResize(e,n,e.target.dataset.resize);return;}
- if(e.target.dataset.port && tool==="connector"){startConnector(e,n,e.target.dataset.port);return;}
- if(tool==="connector"){startConnector(e,n,nearestPort(n,e.clientX,n.y));return;}
+/* ---------- selection / manipulation ---------- */
+function clearSelection(){selected.clear();selectedEdge=null}
+function selectItem(id,multi=false){if(!multi)selected.clear();selected.add(id);selectedEdge=null;render()}
+function onItemPointerDown(ev){
+ if(ev.button!==0)return;
+ ev.stopPropagation();
+ const n=getItem(ev.currentTarget.dataset.id);
+ if(ev.target.dataset.resize){startResize(ev,n,ev.target.dataset.resize);return}
+ if(ev.target.dataset.port && tool==="connector"){beginConnector(ev,n,ev.target.dataset.port);return}
+ if(tool==="connector"){beginConnector(ev,n,nearestPort(n,...canvasPoint(ev.clientX,ev.clientY)));return}
  if(tool==="pan")return;
- selectOnly(n.id,e.shiftKey||e.ctrlKey);
+ selectItem(n.id,ev.shiftKey||ev.ctrlKey||ev.metaKey);
  commit();
- const r=canvas.getBoundingClientRect();
- drag={ids:[...selected],startX:e.clientX,startY:e.clientY,orig:new Map([...selected].map(id=>{const q=item(id);return[id,[q.x,q.y]];}))};
- el.setPointerCapture?.(e.pointerId);
+ drag={ids:[...selected],startX:ev.clientX,startY:ev.clientY,orig:new Map([...selected].map(id=>{const q=getItem(id);return[id,[q.x,q.y]]}))};
+ ev.currentTarget.setPointerCapture?.(ev.pointerId);
 }
-
-function startResize(e,n,corner){
- e.stopPropagation();commit();const r=canvas.getBoundingClientRect();drag={resize:true,id:n.id,corner,startX:e.clientX,startY:e.clientY,orig:[n.x,n.y,n.width,n.height]};
+function startResize(ev,n,corner){
+ ev.stopPropagation();commit();
+ drag={resize:true,id:n.id,corner,startX:ev.clientX,startY:ev.clientY,orig:[n.x,n.y,n.width,n.height]}
 }
-window.addEventListener("pointermove",e=>{
- if(drawing){drawing.points.push([e.clientX-canvas.getBoundingClientRect().left+canvas.scrollLeft,e.clientY-canvas.getBoundingClientRect().top+canvas.scrollTop]);drawPreview();return;}
+function moveDrag(ev){
  if(!drag)return;
- if(drag.resize){const n=item(drag.id),dx=(e.clientX-drag.startX)/zoom,dy=(e.clientY-drag.startY)/zoom,[x,y,w,h]=drag.orig;
-  if(drag.corner.includes("e"))n.width=Math.max(30,w+dx);if(drag.corner.includes("s"))n.height=Math.max(30,h+dy);
-  if(drag.corner.includes("w")){n.x=x+dx;n.width=Math.max(30,w-dx)}if(drag.corner.includes("n")){n.y=y+dy;n.height=Math.max(30,h-dy)}
- }else{const dx=(e.clientX-drag.startX)/zoom,dy=(e.clientY-drag.startY)/zoom;drag.ids.forEach(id=>{const n=item(id),o=drag.orig.get(id);n.x=Math.max(0,o[0]+dx);n.y=Math.max(0,o[1]+dy);});}
- render();
-});
-window.addEventListener("pointerup",()=>{if(drawing)return;drag=null;});
-
-function startConnector(e,n,port){
- e.stopPropagation();tool="connector";connectSource={id:n.id,port};setStatus("Drag to another component to create an arrow.");drawing={connector:true,source:n,sourcePort:port,points:[]};
+ const dx=(ev.clientX-drag.startX)/zoom,dy=(ev.clientY-drag.startY)/zoom;
+ if(drag.resize){
+   const n=getItem(drag.id),[x,y,w,h]=drag.orig;
+   if(drag.corner.includes("e"))n.width=Math.max(25,w+dx);
+   if(drag.corner.includes("s"))n.height=Math.max(25,h+dy);
+   if(drag.corner.includes("w")){n.x=x+dx;n.width=Math.max(25,w-dx)}
+   if(drag.corner.includes("n")){n.y=y+dy;n.height=Math.max(25,h-dy)}
+ }else drag.ids.forEach(id=>{const n=getItem(id),o=drag.orig.get(id);n.x=Math.max(0,o[0]+dx);n.y=Math.max(0,o[1]+dy)});
+ render()
 }
-function finishConnector(target,x,y){
+function editItem(n){
+ const value=prompt("Edit label / text:",n.kind==="sticky"||n.kind==="text"?n.text:n.label);
+ if(value===null)return;commit();
+ if(n.kind==="sticky"||n.kind==="text")n.text=value;else n.label=value;
+ render();status("Item updated.")
+}
+
+/* ---------- connectors ---------- */
+function beginConnector(ev,n,port){
+ tool="connector";setTool("connector");
+ const p=portPoint(n,port);
+ drawing={source:n,sourcePort:port,points:[p]};
+ selected.clear();selected.add(n.id);selectedEdge=null;
+ status(`Connecting from ${n.label||n.kind}. Release on another object.`);
+}
+function beginFreeDraw(ev){
+ const p=canvasPoint(ev.clientX,ev.clientY);drawing={source:null,sourcePort:null,points:[p]};status("Drawing free-form line. Release to finish.")
+}
+function finishDrawing(ev){
  if(!drawing)return;
- const s=drawing.source;if(target&&target.id!==s.id){
-   commit();const toPort=nearestPort(target,x,y);
-   model.edges.push({id:uid(),from:s.id,to:target.id,fromPort:drawing.sourcePort,toPort,type:connector,style:lineStyle,label:$("edgeLabel").value.trim()});
-   setStatus("Arrow created.");render();
- }else if(drawing.points.length>1){
-   commit();model.edges.push({id:uid(),from:s.id,to:s.id,fromPort:drawing.sourcePort,toPort:"right",type:"freeform",style:lineStyle,points:drawing.points,label:""});
+ const hit=objectAt(ev.clientX,ev.clientY);
+ const pts=drawing.points.slice();
+ if(drawing.source && hit && hit.id!==drawing.source.id){
+   commit();
+   const p=canvasPoint(ev.clientX,ev.clientY);
+   const e={id:uid(),from:drawing.source.id,to:hit.id,fromPort:drawing.sourcePort,toPort:nearestPort(hit,p[0],p[1]),type:connector,style:lineStyle,width:lineWidth(),color:lineColor(),startMarker:startMarker(),endMarker:endMarker(),label:$("edgeLabel").value.trim(),waves:3};
+   if(e.type==="curved"){
+     const a=portPoint(drawing.source,drawing.sourcePort),b=portPoint(hit,e.toPort);
+     e.controls=[[a[0]+(b[0]-a[0])*.35,a[1]],[a[0]+(b[0]-a[0])*.65,b[1]]];
+   }
+   if(e.type==="elbow"){const a=portPoint(drawing.source,drawing.sourcePort),b=portPoint(hit,e.toPort);e.midX=(a[0]+b[0])/2}
+   if(e.type==="freeform")e.points=pts.length>1?pts:[portPoint(drawing.source,drawing.sourcePort),p];
+   model.edges.push(e);selected.clear();selectedEdge=e.id;drawing=null;render();status("Arrow created. Select it to adjust its style or control points.");return;
  }
- drawing=null;connectSource=null;render();
-}
-function drawPreview(){
- renderEdges();
- if(!drawing)return;
- const s=drawing.source,[x1,y1]=portPoint(s,drawing.sourcePort),p=drawing.points.at(-1);
- if(!p)return;
- edgesEl.insertAdjacentHTML("beforeend",`<path class="edge selected" d="M ${x1} ${y1} L ${p[0]} ${p[1]}"></path>`);
-}
-canvas.addEventListener("pointermove",e=>{if(drawing)drawPreview();});
-canvas.addEventListener("pointerup",e=>{if(drawing){const hit=document.elementFromPoint(e.clientX,e.clientY)?.closest(".node");finishConnector(hit?item(hit.dataset.id):null,e.clientX,e.clientY);}});
-canvas.addEventListener("pointerdown",e=>{
- if(e.target===canvas||e.target===inner){
-   if(tool==="connector"||tool==="freehand"){drawing={connector:true,source:null,points:[]};return;}
-   if(tool==="text"){const r=canvas.getBoundingClientRect();commit();addItem("text",(e.clientX-r.left+canvas.scrollLeft)/zoom,(e.clientY-r.top+canvas.scrollTop)/zoom,{text:"Double-click to edit"});tool="select";setTool("select");return;}
-   if(tool==="sticky"){const r=canvas.getBoundingClientRect();commit();addItem("sticky",(e.clientX-r.left+canvas.scrollLeft)/zoom,(e.clientY-r.top+canvas.scrollTop)/zoom);tool="select";setTool("select");return;}
-   if(tool==="comment"){const r=canvas.getBoundingClientRect();commit();addItem("comment",(e.clientX-r.left+canvas.scrollLeft)/zoom,(e.clientY-r.top+canvas.scrollTop)/zoom);tool="select";setTool("select");return;}
-   if(tool==="pin"){const r=canvas.getBoundingClientRect();commit();addItem("pin",(e.clientX-r.left+canvas.scrollLeft)/zoom,(e.clientY-r.top+canvas.scrollTop)/zoom);tool="select";setTool("select");return;}
-   selected.clear();render();
+ if(!drawing.source && pts.length>1){
+   commit();
+   const e={id:uid(),from:null,to:null,fromPort:null,toPort:null,type:"freeform",style:lineStyle,width:lineWidth(),color:lineColor(),startMarker:startMarker(),endMarker:endMarker(),label:"",points:pts};
+   model.edges.push(e);selectedEdge=e.id;drawing=null;render();status("Free-form line created.");return;
  }
+ drawing=null;render()
+}
+function lineWidth(){return Math.max(1,Math.min(12,+$("lineWidth").value||2))}
+function lineColor(){return $("lineColor").value||"#52627a"}
+function startMarker(){return $("startMarker").value||"none"}
+function endMarker(){return $("endMarker").value||"arrow"}
+function onEdgePointerDown(ev){
+ ev.stopPropagation();
+ const id=ev.target.dataset.edgeId;
+ if(!id)return;
+ selectedEdge=id;selected.clear();render();status("Arrow selected. Drag visible control points to reshape it.")
+}
+function onEdgeControlDown(ev){
+ ev.stopPropagation();
+ const id=ev.target.dataset.edgeControl||ev.target.dataset.edgeMid;
+ const e=getEdge(id);if(!e)return;
+ commit();
+ if(ev.target.dataset.edgeControl)edgeDrag={id,index:+ev.target.dataset.index};
+ else edgeDrag={id,mid:true};
+}
+function moveEdgeControl(ev){
+ if(!edgeDrag)return;
+ const e=getEdge(edgeDrag.id);if(!e)return;
+ const p=canvasPoint(ev.clientX,ev.clientY);
+ if(edgeDrag.mid)e.midX=p[0];
+ else if(e.type==="curved")e.controls[edgeDrag.index]=p;
+ else if(e.type==="freeform")e.points[edgeDrag.index]=p;
+ render()
+}
+edgesEl.addEventListener("pointerdown",ev=>{
+ if(ev.target.classList.contains("edge-control")){onEdgeControlDown(ev);return}
+ if(ev.target.classList.contains("edge")||ev.target.classList.contains("edge-hit"))onEdgePointerDown(ev)
+});
+document.addEventListener("pointermove",ev=>{
+ if(drawing){
+   const p=canvasPoint(ev.clientX,ev.clientY);
+   const last=drawing.points[drawing.points.length-1];
+   if(!last||Math.hypot(p[0]-last[0],p[1]-last[1])>4)drawing.points.push(p);
+   renderEdges();return
+ }
+ if(edgeDrag){moveEdgeControl(ev);return}
+ if(drag)moveDrag(ev)
+});
+document.addEventListener("pointerup",ev=>{
+ if(drawing){finishDrawing(ev);return}
+ drag=null;edgeDrag=null
 });
 
-function setTool(t){tool=t;document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===t));setStatus(t==="connector"?"Click/drag from a port to another component.":t==="freehand"?"Draw free-form lines on the canvas.":`${t} tool selected.`);}
-document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.tool==="image")$("imageInput").click();else setTool(b.dataset.tool);}));
-document.querySelectorAll("[data-connector]").forEach(b=>b.addEventListener("click",()=>{connector=b.dataset.connector;document.querySelectorAll("[data-connector]").forEach(x=>x.classList.toggle("active",x===b));setTool("connector");}));
-$("lineStyle").addEventListener("change",e=>lineStyle=e.target.value);
+/* ---------- canvas tools ---------- */
+canvas.addEventListener("pointerdown",ev=>{
+ if(ev.button!==0)return;
+ if(ev.target.closest(".node")||ev.target.closest(".edge"))return;
+ if(tool==="connector"){beginFreeDraw(ev);return}
+ if(tool==="draw"){beginFreeDraw(ev);return}
+ const p=canvasPoint(ev.clientX,ev.clientY);
+ if(tool==="text"){commit();addItem("text",p[0],p[1]);setTool("select");return}
+ if(tool==="sticky"){commit();addItem("sticky",p[0],p[1]);setTool("select");return}
+ if(tool==="comment"){commit();addItem("comment",p[0],p[1]);setTool("select");return}
+ if(tool==="pin"){commit();addItem("pin",p[0],p[1]);setTool("select");return}
+ if(tool==="pan"){
+   const sx=ev.clientX,sy=ev.clientY,sl=canvas.scrollLeft,st=canvas.scrollTop;
+   const move=e=>{canvas.scrollLeft=sl-(e.clientX-sx);canvas.scrollTop=st-(e.clientY-sy)};
+   const up=()=>{document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",up)};
+   document.addEventListener("pointermove",move);document.addEventListener("pointerup",up);return
+ }
+ clearSelection();render()
+});
 
-function makePalette(){
- $("palette").innerHTML=CATALOG.map(([t,i,n])=>`<button class="palette-item" draggable="true" data-type="${t}"><span class="palette-icon">${i}</span><span class="palette-label">${n}</span></button>`).join("");
- document.querySelectorAll(".palette-item").forEach(b=>b.addEventListener("dragstart",e=>e.dataTransfer.setData("type",b.dataset.type)));
+/* ---------- library ---------- */
+function renderPalette(filter=""){
+ const q=filter.trim().toLowerCase();
+ $("palette").innerHTML=CATALOG.filter(x=>!q||x[2].toLowerCase().includes(q)||x[0].includes(q)).map(([t,i,n])=>
+ `<button class="palette-item" draggable="true" data-type="${t}"><span class="palette-icon">${i}</span><span class="palette-label">${n}</span></button>`).join("");
+ document.querySelectorAll(".palette-item").forEach(b=>{
+   b.addEventListener("click",()=>{
+     const r=canvas.getBoundingClientRect(),p=canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2);
+     commit();addItem("node",p[0]-75,p[1]-38,{type:b.dataset.type,label:libName(b.dataset.type)});status(`${libName(b.dataset.type)} added.`)
+   });
+   b.addEventListener("dragstart",e=>{e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("application/x-architecture-type",b.dataset.type);e.dataTransfer.setData("text/plain",b.dataset.type)})
+ })
 }
+$("componentSearch").addEventListener("input",e=>renderPalette(e.target.value));
 canvas.addEventListener("dragover",e=>{e.preventDefault();canvas.classList.add("drop-target")});
 canvas.addEventListener("dragleave",()=>canvas.classList.remove("drop-target"));
-canvas.addEventListener("drop",e=>{e.preventDefault();canvas.classList.remove("drop-target");const t=e.dataTransfer.getData("type");if(!t)return;const r=canvas.getBoundingClientRect();commit();addItem("node",(e.clientX-r.left+canvas.scrollLeft)/zoom,(e.clientY-r.top+canvas.scrollTop)/zoom,{type:t,label:nameFor(t)});setStatus(`${nameFor(t)} added.`);});
-
-document.querySelectorAll("[data-shape]").forEach(b=>b.addEventListener("click",()=>{const r=canvas.getBoundingClientRect();commit();addItem("node",(canvas.scrollLeft+canvas.clientWidth/2-75)/zoom,(canvas.scrollTop+canvas.clientHeight/2-38)/zoom,{type:"app",label:b.textContent,type:b.dataset.shape});}));
-$("imageInput").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{commit();addItem("image",(canvas.scrollLeft+canvas.clientWidth/2-110)/zoom,(canvas.scrollTop+canvas.clientHeight/2-80)/zoom,{label:f.name,src:reader.result});};reader.readAsDataURL(f);e.target.value="";});
-
-canvas.addEventListener("paste",e=>{
- const files=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith("image/"));
- if(files.length){files.forEach(f=>{const r=new FileReader();r.onload=()=>{commit();addItem("image",(canvas.scrollLeft+80)/zoom,(canvas.scrollTop+80)/zoom,{label:f.name,src:r.result});};r.readAsDataURL(f);});e.preventDefault();return;}
- const txt=e.clipboardData?.getData("text/plain");if(txt){commit();addItem("text",(canvas.scrollLeft+80)/zoom,(canvas.scrollTop+80)/zoom,{text:txt});}
+canvas.addEventListener("drop",e=>{
+ e.preventDefault();canvas.classList.remove("drop-target");
+ const type=e.dataTransfer.getData("application/x-architecture-type")||e.dataTransfer.getData("text/plain");
+ if(!type)return;
+ const p=canvasPoint(e.clientX,e.clientY);commit();addItem("node",p[0]-75,p[1]-38,{type,label:libName(type)});status(`${libName(type)} added.`)
 });
 
-document.addEventListener("keydown",e=>{
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();selected.clear();model.items.forEach(n=>selected.add(n.id));render();}
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();undo();}
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();redo();}
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"){e.preventDefault();duplicateSelected();}
- if(e.key==="Delete"||e.key==="Backspace"){if(selected.size){e.preventDefault();deleteSelected();}}
+/* ---------- shapes / images ---------- */
+document.querySelectorAll("[data-shape]").forEach(b=>b.addEventListener("click",()=>{
+ const r=canvas.getBoundingClientRect(),p=canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2);
+ commit();addItem("shape",p[0]-85,p[1]-50,{shape:b.dataset.shape,label:b.textContent});status(`${b.textContent} shape added.`)
+}));
+$("imageInput").addEventListener("change",ev=>{
+ const f=ev.target.files?.[0];if(!f)return;
+ const reader=new FileReader();reader.onload=()=>{
+   const p=canvasPoint(canvas.getBoundingClientRect().left+canvas.clientWidth/2,canvas.getBoundingClientRect().top+canvas.clientHeight/2);
+   commit();addItem("image",p[0]-120,p[1]-85,{label:f.name,src:reader.result});status("Image inserted as a connectable node.")
+ };reader.readAsDataURL(f);ev.target.value=""
+});
+canvas.addEventListener("paste",ev=>{
+ const files=[...(ev.clipboardData?.files||[])].filter(f=>f.type.startsWith("image/"));
+ if(files.length){files.forEach(f=>{const r=new FileReader();r.onload=()=>{
+   const p=canvasPoint(canvas.getBoundingClientRect().left+100,canvas.getBoundingClientRect().top+100);
+   commit();addItem("image",p[0],p[1],{label:f.name||"Pasted image",src:r.result})
+ };r.readAsDataURL(f)});ev.preventDefault();return}
 });
 
-function deleteSelected(){if(!selected.size)return;commit();const ids=new Set(selected);model.items=model.items.filter(n=>!ids.has(n.id));model.edges=model.edges.filter(e=>!ids.has(e.from)&&!ids.has(e.to));selected.clear();render();setStatus("Selected items deleted.")}
-function duplicateSelected(){if(!selected.size)return;commit();const ids=[...selected],map=new Map();ids.forEach(id=>{const n=item(id),c=JSON.parse(JSON.stringify(n));c.id=uid();c.x+=25;c.y+=25;map.set(id,c.id);model.items.push(c)});model.edges.filter(e=>ids.includes(e.from)&&ids.includes(e.to)).forEach(e=>model.edges.push({...e,id:uid(),from:map.get(e.from),to:map.get(e.to)}));selected.clear();model.items.slice(-ids.length).forEach(n=>selected.add(n.id));render();}
-$("deleteSelected").onclick=deleteSelected;$("duplicateSelected").onclick=duplicateSelected;$("duplicateFloat").onclick=duplicateSelected;$("deleteFloat").onclick=deleteSelected;
-$("bringFront").onclick=()=>{if(!selected.size)return;commit();const max=Math.max(0,...model.items.map(n=>n.z||10));selected.forEach(id=>item(id).z=max+1);render()};
-$("sendBack").onclick=()=>{if(!selected.size)return;commit();selected.forEach(id=>item(id).z=1);render()};
-
-function downstream(start){const out=new Set(),q=[start];while(q.length){const s=q.shift();model.edges.filter(e=>e.from===s).forEach(e=>{if(!out.has(e.to)){out.add(e.to);q.push(e.to)}})}return [...out]}
-$("impactMode").onclick=()=>{impact=!impact;$("impactMode").classList.toggle("active",impact);render();};
+/* ---------- toolbar ---------- */
+function setTool(t){
+ tool=t;
+ document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===t));
+ status(t==="connector"?"Connect: drag from a port and release on another object.":t==="draw"?"Draw: free-form line on the canvas.":`${t[0].toUpperCase()+t.slice(1)} tool selected.`)
+}
+document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>{
+ if(b.dataset.tool==="image"){$("imageInput").click();return}
+ setTool(b.dataset.tool)
+}));
+document.querySelectorAll("[data-connector]").forEach(b=>b.addEventListener("click",()=>{
+ connector=b.dataset.connector;
+ document.querySelectorAll("[data-connector]").forEach(x=>x.classList.toggle("active",x.dataset.connector===connector));
+ setTool("connector");
+ status(`${connector} arrow selected. Drag from a port to another component.`)
+}));
 $("connectMode").onclick=()=>setTool("connector");
-$("autoLayout").onclick=()=>{commit();model.items.filter(n=>n.kind==="node").forEach((n,i)=>{n.x=50+(i%5)*220;n.y=80+Math.floor(i/5)*140});render();setStatus("Components arranged.");};
-$("validateDiagram").onclick=()=>{const f=[];model.items.filter(n=>n.kind==="node").forEach(n=>{const connected=model.edges.some(e=>e.from===n.id||e.to===n.id);if(!connected)f.push(`${n.label}: no connections mapped.`)});$("validationResults").innerHTML=f.length?f.map(x=>`<div class="finding warning">${esc(x)}</div>`).join(""):'<div class="finding ok">No basic connectivity gaps found.</div>';};
-$("diagramName").oninput=e=>model.name=e.target.value;
-["nodeLabel","nodeEnvironment","nodeOwner","nodeDescription","nodeWidth","nodeHeight","nodeRotation","nodeFill","nodeStroke"].forEach(id=>$(id).addEventListener("input",updateSelectedFromInspector));
+$("lineStyle").addEventListener("change",()=>{if(selectedEdge)applyEdgeStyle()});
+$("lineWidth").addEventListener("change",()=>{if(selectedEdge)applyEdgeStyle()});
+$("lineColor").addEventListener("change",()=>{if(selectedEdge)applyEdgeStyle()});
+$("edgeLabel").addEventListener("change",()=>{if(selectedEdge)applyEdgeStyle()});
+$("applyEdgeStyle").onclick=applyEdgeStyle;
+function applyEdgeStyle(){
+ if(!selectedEdge){status("Select an arrow first.");return}
+ const e=getEdge(selectedEdge);if(!e)return;commit();
+ e.style=$("lineStyle").value;e.width=lineWidth();e.color=lineColor();e.startMarker=startMarker();e.endMarker=endMarker();e.label=$("edgeLabel").value.trim();
+ render();status("Arrow style applied.")
+}
+$("edgeStyleInspector").addEventListener("change",()=>{if(!selectedEdge)return;$("lineStyle").value=$("edgeStyleInspector").value;applyEdgeStyle()});
+$("edgeWidthInspector").addEventListener("change",()=>{if(!selectedEdge)return;$("lineWidth").value=$("edgeWidthInspector").value;applyEdgeStyle()});
+$("edgeColorInspector").addEventListener("change",()=>{if(!selectedEdge)return;$("lineColor").value=$("edgeColorInspector").value;applyEdgeStyle()});
+$("edgeLabelInspector").addEventListener("change",()=>{if(!selectedEdge)return;$("edgeLabel").value=$("edgeLabelInspector").value;applyEdgeStyle()});
 
-function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function saveArch(){download(new Blob([JSON.stringify(model,null,2)],{type:"application/json"}),`${(model.name||"architecture").replace(/[^\w-]+/g,"-")}.arch`);setStatus("Portable .arch file created.");}
-function loadFile(){const i=document.createElement("input");i.type="file";i.accept=".arch,.json,application/json";i.onchange=async()=>{const f=i.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!x.items||!x.edges)throw Error("Invalid .arch file");commit();model=x;selected.clear();render();setStatus("Architecture loaded.");}catch(err){setStatus("Load failed: "+err.message)}};i.click()}
-$("saveDiagram").onclick=saveArch;$("loadDiagram").onclick=loadFile;
-$("exportJson").onclick=()=>download(new Blob([JSON.stringify(model,null,2)],{type:"application/json"}),"architecture.json");
-$("importJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!x.items||!x.edges)throw Error("Invalid JSON");commit();model=x;selected.clear();render();}catch(err){setStatus("Import failed: "+err.message)}e.target.value=""};
-$("newDiagram").onclick=()=>{if(confirm("Start a new blank diagram?")){commit();model={version:2,name:"Untitled architecture",items:[],edges:[]};selected.clear();render();}};
-function svgExport(){const s=new XMLSerializer().serializeToString(edgesEl);return `<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="2000">${s}</svg>`}
-$("exportSvg").onclick=()=>download(new Blob([svgExport()],{type:"image/svg+xml"}),"architecture.svg");
-$("exportPng").onclick=()=>{const svg=svgExport(),img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=3000;c.height=2000;const ctx=c.getContext("2d");ctx.fillStyle="#eef2f8";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0);c.toBlob(b=>download(b,"architecture.png"),"image/png")};img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)};
+/* ---------- impact ---------- */
+function downstream(start){
+ const out=[],seen=new Set(),q=[start];
+ while(q.length){const id=q.shift();model.edges.filter(e=>e.from===id).forEach(e=>{if(e.to&&!seen.has(e.to)){seen.add(e.to);out.push(e.to);q.push(e.to)}})}
+ return out
+}
+function renderImpact(){
+ if(!impact||selected.size!==1){$("impactResults").innerHTML='<p class="hint">Turn Impact on and select one component.</p>';return}
+ const ids=downstream([...selected][0]);
+ $("impactResults").innerHTML=ids.length?ids.map(id=>{const n=getItem(id);return`<div class="finding">${esc(n?.label||n?.kind)} is downstream.</div>`}).join(""):'<div class="finding ok">No downstream dependencies.</div>';
+}
+$("impactMode").onclick=()=>{impact=!impact;$("impactMode").classList.toggle("active",impact);render();status(impact?"Impact mode enabled. Select a source component.":"Impact mode disabled.")};
 
-function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop());setStatus("Undo.");}
-function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());setStatus("Redo.");}
+/* ---------- validation / layout ---------- */
+$("validateDiagram").onclick=()=>{
+ const findings=[];
+ model.items.filter(n=>["node","shape","image"].includes(n.kind)).forEach(n=>{
+   const connected=model.edges.some(e=>e.from===n.id||e.to===n.id);
+   if(!connected)findings.push(`${n.label||n.kind}: no connections mapped.`);
+ });
+ const invalid=model.edges.filter(e=>e.from&&!getItem(e.from)||e.to&&!getItem(e.to));
+ invalid.forEach(()=>findings.push("One connector references a missing object."));
+ $("validationResults").innerHTML=findings.length?findings.map(x=>`<div class="finding warning">${esc(x)}</div>`).join(""):'<div class="finding ok">No basic architecture gaps found.</div>';
+ status(findings.length?`${findings.length} validation finding(s).`:"Validation passed.")
+};
+$("autoLayout").onclick=()=>{
+ const arr=model.items.filter(n=>["node","shape","image"].includes(n.kind));if(!arr.length)return;
+ commit();arr.forEach((n,i)=>{n.x=60+(i%5)*220;n.y=70+Math.floor(i/5)*150});render();status("Components arranged.")
+};
+
+/* ---------- inspector ---------- */
+["nodeLabel","nodeEnvironment","nodeOwner","nodeDescription","nodeWidth","nodeHeight","nodeRotation","nodeFill","nodeStroke"].forEach(id=>{
+ $(id).addEventListener("change",()=>{
+   if(selected.size!==1)return;const n=getItem([...selected][0]);if(!n)return;commit();
+   if(id==="nodeLabel")n.label=$(id).value;
+   else if(id==="nodeEnvironment")n.environment=$(id).value;
+   else if(id==="nodeOwner")n.owner=$(id).value;
+   else if(id==="nodeDescription")n.description=$(id).value;
+   else if(id==="nodeWidth")n.width=Math.max(20,+$(id).value||20);
+   else if(id==="nodeHeight")n.height=Math.max(20,+$(id).value||20);
+   else if(id==="nodeRotation")n.rotation=+$("nodeRotation").value||0;
+   else if(id==="nodeFill")n.fill=$(id).value;
+   else if(id==="nodeStroke")n.stroke=$(id).value;
+   render()
+ })
+});
+$("editTextButton").onclick=()=>{if(selected.size===1)editItem(getItem([...selected][0]))};
+
+/* ---------- delete / duplicate / keyboard ---------- */
+function deleteSelected(){
+ if(selectedEdge){commit();model.edges=model.edges.filter(e=>e.id!==selectedEdge);selectedEdge=null;render();status("Arrow deleted.");return}
+ if(!selected.size)return;commit();const ids=new Set(selected);model.items=model.items.filter(n=>!ids.has(n.id));model.edges=model.edges.filter(e=>!ids.has(e.from)&&!ids.has(e.to));clearSelection();render();status("Selected items deleted.")
+}
+function duplicateSelected(){
+ if(!selected.size)return;commit();const ids=[...selected],map=new Map(),copies=[];
+ ids.forEach(id=>{const n=getItem(id),c=JSON.parse(JSON.stringify(n));c.id=uid();c.x+=30;c.y+=30;map.set(id,c.id);model.items.push(c);copies.push(c)});
+ model.edges.filter(e=>e.from&&e.to&&ids.includes(e.from)&&ids.includes(e.to)).forEach(e=>model.edges.push({...JSON.parse(JSON.stringify(e)),id:uid(),from:map.get(e.from),to:map.get(e.to)}));
+ selected.clear();copies.forEach(n=>selected.add(n.id));selectedEdge=null;render();status("Duplicated.")
+}
+$("deleteSelected").onclick=deleteSelected;$("duplicateSelected").onclick=duplicateSelected;
 $("undoBtn").onclick=undo;$("redoBtn").onclick=redo;
+document.addEventListener("keydown",ev=>{
+ if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="z"){ev.preventDefault();undo()}
+ else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="y"){ev.preventDefault();redo()}
+ else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="d"){ev.preventDefault();duplicateSelected()}
+ else if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==="a"){ev.preventDefault();selected.clear();selectedEdge=null;model.items.forEach(n=>selected.add(n.id));render()}
+ else if(ev.key==="Delete"||ev.key==="Backspace"){if(document.activeElement.tagName==="INPUT"||document.activeElement.tagName==="TEXTAREA")return;ev.preventDefault();deleteSelected()}
+});
 
-function updateZoomUI(){const s=Math.round(zoom*100)+"%";$("zoomLevel").textContent=s;$("zoomLevel2").textContent=s;inner.style.transform=`scale(${zoom})`;inner.style.transformOrigin="0 0";}
-function setZoom(z){zoom=Math.max(.25,Math.min(2.5,z));updateZoomUI();}
-["zoomIn","zoomIn2"].forEach(id=>$(id).onclick=()=>setZoom(zoom+.1));["zoomOut","zoomOut2"].forEach(id=>$(id).onclick=()=>setZoom(zoom-.1));$("zoomReset").onclick=()=>setZoom(1);
-
-document.querySelectorAll(".template-button").forEach(b=>b.onclick=()=>loadTemplate(b.dataset.template));
+/* ---------- templates ---------- */
 function loadTemplate(type){
- commit();model={version:2,name:type==="aiops"?"AIOps Control Center":type==="aks"?"AKS Application Platform":"Azure Landing Zone",items:[],edges:[]};
+ commit();model={version:4,name:type==="aiops"?"AIOps Control Center":type==="aks"?"AKS Application Platform":"Azure Landing Zone",items:[],edges:[]};
  const add=(t,x,y,label)=>addItem("node",x,y,{type:t,label});
  const a=[];
- if(type==="aiops"){a.push(add("internet",40,220,"Monitoring Sources"),add("monitoring",260,100,"Azure Monitor"),add("servicenow",260,330,"ServiceNow"),add("app",500,210,"AIOps Control Center"),add("database",760,110,"Incident Store"),add("aks",760,330,"AKS Agents"));}
- else if(type==="aks"){a.push(add("user",40,220,"Users"),add("gateway",250,220,"Application Gateway"),add("aks",470,220,"AKS Cluster"),add("app",700,120,"Orders API"),add("database",700,330,"PostgreSQL"),add("monitoring",470,430,"Azure Monitor"));}
- else{a.push(add("identity",50,120,"Entra ID"),add("firewall",280,120,"Azure Firewall"),add("app",510,120,"Shared Services"),add("storage",750,120,"Storage"),add("monitoring",510,340,"Log Analytics"));}
- for(let i=0;i<a.length-1;i++)model.edges.push({id:uid(),from:a[i].id,to:a[i+1].id,fromPort:"right",toPort:"left",type:"straight",style:"solid",label:""});
- selected.clear();render();setStatus("Template loaded.");
+ if(type==="aiops")a.push(add("monitoring",40,180,"Monitoring Sources"),add("monitoring",260,70,"Azure Monitor"),add("servicenow",260,300,"ServiceNow"),add("agent",510,180,"AIOps Control Center"),add("database",780,70,"Incident Store"),add("aks",780,300,"AKS Agents"));
+ if(type==="aks")a.push(add("user",40,190,"Users"),add("gateway",250,190,"Application Gateway"),add("aks",470,190,"AKS Cluster"),add("app",720,80,"Orders API"),add("sql",720,320,"PostgreSQL"),add("monitoring",470,430,"Azure Monitor"));
+ if(type==="landing")a.push(add("identity",50,120,"Entra ID"),add("firewall",280,120,"Azure Firewall"),add("app",520,120,"Shared Services"),add("storage",780,120,"Storage Account"),add("logs",520,350,"Log Analytics"));
+ for(let i=0;i<a.length-1;i++)model.edges.push({id:uid(),from:a[i].id,to:a[i+1].id,fromPort:"right",toPort:"left",type:"straight",style:"solid",width:2,color:"#52627a",startMarker:"none",endMarker:"arrow",label:""});
+ clearSelection();render();status("Template loaded.")
 }
+document.querySelectorAll("[data-template]").forEach(b=>b.addEventListener("click",()=>loadTemplate(b.dataset.template)));
 
-makePalette();render();setStatus("Ready. Drag components, choose Arrow, or use the tools.");
+/* ---------- zoom ---------- */
+function updateZoom(){inner.style.transform=`scale(${zoom})`;$("zoomLevel").textContent=Math.round(zoom*100)+"%"}
+function setZoom(v){zoom=Math.max(.25,Math.min(2.5,v));updateZoom()}
+$("zoomIn").onclick=()=>setZoom(zoom+.1);$("zoomOut").onclick=()=>setZoom(zoom-.1);$("zoomReset").onclick=()=>setZoom(1);
+$("fitView").onclick=()=>{
+ const vis=model.items.filter(n=>["node","shape","image","sticky","comment","text","pin"].includes(n.kind));if(!vis.length)return;
+ const minX=Math.min(...vis.map(n=>n.x)),minY=Math.min(...vis.map(n=>n.y)),maxX=Math.max(...vis.map(n=>n.x+n.width)),maxY=Math.max(...vis.map(n=>n.y+n.height));
+ const sx=(canvas.clientWidth-80)/(maxX-minX+80),sy=(canvas.clientHeight-80)/(maxY-minY+80);setZoom(Math.max(.25,Math.min(1.5,Math.min(sx,sy))));canvas.scrollLeft=Math.max(0,minX*zoom-30);canvas.scrollTop=Math.max(0,minY*zoom-30)
+};
+
+/* ---------- persistence / exports ---------- */
+function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$("diagramName").addEventListener("input",e=>model.name=e.target.value);
+$("newDiagram").onclick=()=>{if(confirm("Start a new blank diagram?")){commit();model={version:4,name:"Untitled architecture",items:[],edges:[]};clearSelection();render();status("New diagram created.")}};
+$("saveDiagram").onclick=()=>download(new Blob([JSON.stringify(model,null,2)],{type:"application/json"}),`${(model.name||"architecture").replace(/[^\w-]+/g,"-")}.arch`);
+$("loadDiagram").onclick=()=>{
+ const i=document.createElement("input");i.type="file";i.accept=".arch,.json,application/json";i.onchange=async()=>{
+   const f=i.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!x.items||!x.edges)throw Error("Invalid architecture file");commit();model=x;clearSelection();render();status("Architecture loaded.")}catch(err){status("Load failed: "+err.message)}
+ };i.click()
+};
+$("exportJson").onclick=()=>download(new Blob([JSON.stringify(model,null,2)],{type:"application/json"}),"architecture.json");
+$("importJson").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!x.items||!x.edges)throw Error("Invalid JSON");commit();model=x;clearSelection();render();status("JSON imported.")}catch(err){status("Import failed: "+err.message)}e.target.value=""});
+
+function exportSvgString(){
+ const parts=[`<svg xmlns="http://www.w3.org/2000/svg" width="3200" height="2200" viewBox="0 0 3200 2200">`,`<rect width="100%" height="100%" fill="#eef3fa"/>`];
+ model.edges.forEach(e=>{const d=edgePath(e);if(!d)return;parts.push(`<path d="${d}" fill="none" stroke="${e.color||"#52627a"}" stroke-width="${e.width||2}" ${e.style==="dashed"?'stroke-dasharray="8 5"':e.style==="dotted"?'stroke-dasharray="2 5"':""}/>`);});
+ model.items.forEach(n=>{
+   if(n.kind==="image")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="8" fill="#fff" stroke="${n.stroke||"#64748b"}"/>`);
+   else if(n.kind==="shape")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="${n.shape==="ellipse"?n.height/2:10}" fill="${n.fill||"#fff"}" stroke="${n.stroke||"#64748b"}"/>`);
+   else if(n.kind==="node")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="8" fill="${n.fill||"#fff"}" stroke="${n.stroke||"#64748b"}"/><text x="${n.x+10}" y="${n.y+35}" font-family="Arial" font-size="16" font-weight="700">${esc(n.label)}</text>`);
+   else if(n.kind==="text")parts.push(`<text x="${n.x}" y="${n.y+24}" font-family="Arial" font-size="16">${esc(n.text)}</text>`);
+ });
+ return parts.join("")+"</svg>"
+}
+$("exportSvg").onclick=()=>download(new Blob([exportSvgString()],{type:"image/svg+xml"}),"architecture.svg");
+$("exportPng").onclick=()=>{
+ const svg=exportSvgString(),img=new Image();
+ img.onload=()=>{const c=document.createElement("canvas");c.width=3200;c.height=2200;const ctx=c.getContext("2d");ctx.drawImage(img,0,0);c.toBlob(b=>download(b,"architecture.png"),"image/png")};
+ img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)
+};
+
+/* ---------- init ---------- */
+renderPalette();
+render();
+status("Ready. Drag or click components. Use Connect for real node-to-node arrows.");
 })();
