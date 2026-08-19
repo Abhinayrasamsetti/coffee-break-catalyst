@@ -167,7 +167,18 @@ const ICON_PATHS={
  terraform:`<path d="m5 5 7 4v7l-7-4V5ZM12 9l7-4v7l-7 4V9ZM12 16l7-4v7l-7 4v-7Z"/>`,
  automation:`<path d="M12 3v5M12 16v5M3 12h5M16 12h5M5.6 5.6l3.5 3.5M14.9 14.9l3.5 3.5M18.4 5.6l-3.5 3.5M9.1 14.9l-3.5 3.5"/><circle cx="12" cy="12" r="4"/>`,
  package:`<path d="m5 7 7-4 7 4-7 4-7-4ZM5 7v10l7 4 7-4V7M12 11v10"/>`,
- document:`<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h3M9 11h6M9 15h6"/>`
+ document:`<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h3M9 11h6M9 15h6"/>`,
+ region:`<path d="M4 7h16v10H4z"/><path d="M7 7v10M17 7v10M4 12h16"/>`,
+ zone:`<path d="M5 5h14v14H5z"/><path d="M8 8h8v8H8z"/>`,
+ environment:`<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h5M8 16h8"/>`,
+ datacenter:`<path d="M5 4h14v16H5z"/><path d="M8 8h8v3H8zM8 13h8v3H8z"/><path d="M10 9.5h.01M10 14.5h.01"/>`,
+ kubernetes:`<path d="m12 3 7 4v10l-7 4-7-4V7l7-4Z"/><circle cx="12" cy="12" r="2.5"/><path d="M12 5.5v4M12 14.5v4M5.8 8.5l3.5 2M14.7 13.5l3.5 2M18.2 8.5l-3.5 2M9.3 13.5l-3.5 2"/>`,
+ function:`<path d="M8 5c-2 2-2 10 0 12M16 5c2 2 2 10 0 12M6 12h12"/>`,
+ monitor:`<rect x="4" y="5" width="16" height="12" rx="2"/><path d="M7 13l3-3 2 2 4-5M9 20h6"/>`,
+ logs:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>`,
+ audit:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>`,
+ vpc:`<path d="M5 4h14v16H5z"/><path d="M9 8h6v8H9zM5 12h4M15 12h4"/>`,
+ data:`<path d="M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3v12c0 1.7-3.1 3-7 3s-7-1.3-7-3V6Z"/><path d="M5 6c0 1.7 3.1 3 7 3s7-1.3 7-3M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>`,
 };
 
 const CATEGORY_ACCENT={
@@ -176,10 +187,12 @@ const CATEGORY_ACCENT={
  "Data & AI":"#7b4fb3","Observability & Enterprise":"#237a63"
 };
 function iconSvg(kind,id=""){
- const body=ICON_PATHS[kind]||ICON_PATHS.application;
- const accent=libEntrySafe(id)?.[3]||"Core Architecture";
- const color=CATEGORY_ACCENT[accent]||"#52627a";
- return `<svg class="catalog-svg" viewBox="0 0 24 24" aria-hidden="true" style="--icon-color:${color}">${body}</svg>`;
+  const safeKind = ICON_PATHS[kind] ? kind : (ICON_PATHS[id] ? id : "application");
+  const body = ICON_PATHS[safeKind] || ICON_PATHS.application;
+  const accent = libEntrySafe(id)?.[3] || "Core Architecture";
+  const color = CATEGORY_ACCENT[accent] || "#52627a";
+  const vendor = ["aws","azure","gcp"].includes(safeKind) ? " vendor-mark" : "";
+  return `<svg class="catalog-svg${vendor}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="--icon-color:${color}">${body}</svg>`;
 }
 function libEntrySafe(t){ return CATALOG.find(x=>x[0]===t)||null; }
 
