@@ -3,26 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Browser-only enterprise architecture diagram builder">
   <title>Architecture Diagram Builder</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="app-header">
   <div class="app-title">
-    <p class="eyebrow">Coffee Break Catalyst</p>
+    <div class="eyebrow">Coffee Break Catalyst</div>
     <h1>Architecture Diagram Builder</h1>
   </div>
   <div class="header-actions">
     <button class="button" id="newDiagram">New</button>
     <button class="button" id="saveDiagram">Save .arch</button>
-    <button class="button" id="loadDiagram">Load .arch</button>
-    <button class="button" id="undoBtn">↶ Undo</button>
-    <button class="button" id="redoBtn">↷ Redo</button>
-    <button class="button" id="exportJson">JSON</button>
+    <button class="button" id="loadDiagram">Open .arch</button>
+    <button class="button" id="undoBtn">↶</button>
+    <button class="button" id="redoBtn">↷</button>
+    <button class="button" id="exportJson">Export JSON</button>
     <label class="button file-button">Import JSON<input id="importJson" type="file" accept=".json,application/json"></label>
-    <button class="button" id="exportSvg">SVG</button>
-    <button class="button primary" id="exportPng">PNG</button>
+    <button class="button" id="exportSvg">Export SVG</button>
+    <button class="button primary" id="exportPng">Export PNG</button>
   </div>
 </header>
 
@@ -38,15 +37,16 @@
         <button class="tool-button" data-tool="comment">💬 Comment</button>
         <button class="tool-button" data-tool="pin">📌 Pin</button>
         <button class="tool-button" data-tool="image">🖼 Image</button>
-        <button class="tool-button" data-tool="connector">↗ Arrow</button>
-        <button class="tool-button" data-tool="freehand">✎ Draw</button>
+        <button class="tool-button" data-tool="connector">↗ Connect</button>
+        <button class="tool-button" data-tool="draw">✎ Draw</button>
       </div>
       <input id="imageInput" type="file" accept="image/*" hidden>
     </section>
 
     <section class="sidebar-section">
-      <h2>Architecture Components</h2>
-      <p class="hint">Drag any item onto the canvas.</p>
+      <h2>Architecture Library</h2>
+      <input id="componentSearch" class="search" placeholder="Search components...">
+      <p class="hint">Drag or click an item to add it.</p>
       <div id="palette" class="palette"></div>
     </section>
 
@@ -81,39 +81,58 @@
       <button class="button" id="validateDiagram">Validate</button>
       <button class="button" id="duplicateSelected">Duplicate</button>
       <button class="button danger" id="deleteSelected">Delete</button>
-      <div class="toolbar-spacer"></div>
-      <button class="button" id="zoomOut">−</button>
-      <span id="zoomLevel">100%</span>
-      <button class="button" id="zoomIn">+</button>
-      <button class="button" id="zoomReset">100%</button>
+    </div>
+
+    <div class="connector-toolbar">
+      <strong>Arrow</strong>
+      <button class="style-button active" data-connector="straight">Straight</button>
+      <button class="style-button" data-connector="elbow">Elbow</button>
+      <button class="style-button" data-connector="curved">Curved</button>
+      <button class="style-button" data-connector="wavy">Wavy</button>
+      <button class="style-button" data-connector="freeform">Free-form</button>
+      <span class="toolbar-divider"></span>
+      <label>Line
+        <select id="lineStyle"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option></select>
+      </label>
+      <label>Width
+        <input id="lineWidth" type="number" min="1" max="12" value="2">
+      </label>
+      <label>Color
+        <input id="lineColor" type="color" value="#52627a">
+      </label>
+      <label>Start
+        <select id="startMarker"><option value="none">None</option><option value="arrow">Arrow</option><option value="circle">Circle</option><option value="diamond">Diamond</option></select>
+      </label>
+      <label>End
+        <select id="endMarker"><option value="arrow">Arrow</option><option value="none">None</option><option value="circle">Circle</option><option value="diamond">Diamond</option></select>
+      </label>
+      <label>Label
+        <input id="edgeLabel" placeholder="REST / HTTPS">
+      </label>
+      <button class="button small" id="applyEdgeStyle">Apply to selected arrow</button>
     </div>
 
     <div id="canvas" class="canvas">
       <div id="canvasInner" class="canvas-inner">
         <svg id="edges" class="edges"></svg>
         <div id="nodes" class="nodes"></div>
-        <div id="selectionBox" class="selection-box" hidden></div>
       </div>
-      <div id="canvasEmpty" class="canvas-empty">Drag components here or choose a tool.</div>
-      <div id="floatingToolbar" class="floating-toolbar" hidden>
-        <button id="bringFront" title="Bring front">⬆</button>
-        <button id="sendBack" title="Send back">⬇</button>
-        <button id="duplicateFloat" title="Duplicate">⧉</button>
-        <button id="deleteFloat" title="Delete">🗑</button>
-      </div>
+      <div id="canvasEmpty" class="canvas-empty">Drag or click a component, then connect objects with the arrow tool.</div>
       <div class="zoom-controls">
-        <button id="zoomOut2">−</button>
-        <span id="zoomLevel2">100%</span>
-        <button id="zoomIn2">+</button>
+        <button id="zoomOut">−</button>
+        <span id="zoomLevel">100%</span>
+        <button id="zoomIn">+</button>
+        <button id="zoomReset">1:1</button>
+        <button id="fitView">Fit</button>
       </div>
     </div>
-
-    <div class="status" id="status">Ready. Save creates a portable .arch file.</div>
+    <div class="status" id="status">Ready.</div>
   </section>
 
   <aside class="sidebar inspector-panel">
     <h2>Inspector</h2>
-    <div id="inspectorEmpty" class="hint">Select an item to edit it.</div>
+    <div id="inspectorEmpty" class="hint">Select a component or arrow to edit it.</div>
+
     <form id="inspector" hidden>
       <label>Name<input id="nodeLabel"></label>
       <label>Type<input id="nodeType" disabled></label>
@@ -122,33 +141,35 @@
       </select></label>
       <label>Owner<input id="nodeOwner" placeholder="Platform team"></label>
       <label>Description<textarea id="nodeDescription" rows="4"></textarea></label>
-      <label>Width<input id="nodeWidth" type="number" min="30"></label>
-      <label>Height<input id="nodeHeight" type="number" min="30"></label>
-      <label>Rotation<input id="nodeRotation" type="number" min="-180" max="180"></label>
+      <div class="two-col">
+        <label>Width<input id="nodeWidth" type="number" min="20"></label>
+        <label>Height<input id="nodeHeight" type="number" min="20"></label>
+      </div>
+      <div class="two-col">
+        <label>Rotation<input id="nodeRotation" type="number" min="-180" max="180"></label>
+        <label>Border<input id="nodeStroke" type="color" value="#64748b"></label>
+      </div>
       <label>Fill<input id="nodeFill" type="color" value="#ffffff"></label>
-      <label>Border<input id="nodeStroke" type="color" value="#64748b"></label>
+      <button type="button" class="button" id="editTextButton">Edit text / label</button>
     </form>
 
-    <h2>Arrow</h2>
-    <div class="arrow-options">
-      <button class="style-button active" data-connector="straight">Straight</button>
-      <button class="style-button" data-connector="elbow">Elbow</button>
-      <button class="style-button" data-connector="curved">Curved</button>
-      <button class="style-button" data-connector="wavy">Wavy</button>
-      <button class="style-button" data-connector="freeform">Free-form</button>
-    </div>
-    <label class="inspector-label">Line style
-      <select id="lineStyle"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option></select>
-    </label>
-    <label class="inspector-label">Arrow label<input id="edgeLabel" placeholder="REST / HTTPS"></label>
+    <section id="edgeInspector" hidden>
+      <h2>Selected Arrow</h2>
+      <p class="hint">Use the controls above to change the selected connector. Curved and free-form arrows expose draggable control points.</p>
+      <label class="inspector-label">Label<input id="edgeLabelInspector"></label>
+      <label class="inspector-label">Style<select id="edgeStyleInspector"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option></select></label>
+      <label class="inspector-label">Width<input id="edgeWidthInspector" type="number" min="1" max="12"></label>
+      <label class="inspector-label">Color<input id="edgeColorInspector" type="color"></label>
+    </section>
 
     <h2>Validation</h2>
     <div id="validationResults" class="validation-results"><p class="hint">Run validation to check common gaps.</p></div>
+
     <h2>Impact</h2>
-    <div id="impactResults" class="impact-results"><p class="hint">Enable Impact and select a component.</p></div>
+    <div id="impactResults" class="impact-results"><p class="hint">Turn Impact on and select a component.</p></div>
   </aside>
 </main>
-<footer>Browser-only application. Diagram data stays in your browser unless you explicitly save/export it.</footer>
+<footer>Browser-only architecture diagram builder. Your diagram stays local unless you explicitly save/export it.</footer>
 <script src="app.js"></script>
 </body>
 </html>
