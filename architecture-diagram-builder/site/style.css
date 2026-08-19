@@ -131,3 +131,9 @@ footer{height:31px;padding:7px 18px;background:#fff;border-top:1px solid var(--l
 .edge-control:active{cursor:grabbing}
 #edges{touch-action:none}
 .canvas{touch-action:none}
+
+/* Free-form connectors are continuous strokes. Control points are intentionally
+   hidden so a selected path never appears as a dotted circle. */
+.edge-control[data-edge-control]{
+  display:none !important;
+}
