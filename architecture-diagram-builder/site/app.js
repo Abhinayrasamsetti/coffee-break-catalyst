@@ -1,548 +1,1164 @@
-/* =========================================================
+/* ============================================================
+   COFFEE BREAK CATALYST
    ARCHITECTURE DIAGRAM BUILDER
-   Expanded Miro / draw.io style editor
-   ========================================================= */
+   Complete interaction engine
+   ============================================================ */
 
-'use strict';
+"use strict";
 
-/* =========================================================
-   COMPONENT LIBRARY
-   ========================================================= */
+/* ============================================================
+   STATE
+   ============================================================ */
 
-const catalog = [
-  /* Cloud */
-  ['cloud', '☁️', 'Cloud'],
-  ['azure', '🔷', 'Microsoft Azure'],
-  ['aws', '🟧', 'AWS'],
-  ['gcp', '🔵', 'Google Cloud'],
-  ['region', '🌐', 'Cloud Region'],
-  ['availability-zone', '▦', 'Availability Zone'],
+const state = {
+  name: "Untitled architecture",
 
-  /* Compute */
-  ['vm', '🖥️', 'Virtual Machine'],
-  ['server', '▣', 'Server'],
-  ['container', '⬡', 'Container'],
-  ['aks', '☸️', 'AKS Cluster'],
-  ['kubernetes', '☸', 'Kubernetes'],
-  ['docker', '🐳', 'Docker'],
-  ['function', 'ƒ', 'Serverless Function'],
-  ['app', '▣', 'Application'],
-  ['microservice', '◈', 'Microservice'],
-
-  /* Networking */
-  ['internet', '◎', 'Internet'],
-  ['router', '⇄', 'Router'],
-  ['switch', '⇆', 'Network Switch'],
-  ['firewall', '🛡️', 'Firewall'],
-  ['gateway', '⇥', 'Gateway'],
-  ['api', '⇄', 'API Gateway'],
-  ['load-balancer', '⚖', 'Load Balancer'],
-  ['vpn', '🔒', 'VPN'],
-  ['proxy', '↔', 'Proxy'],
-  ['dns', 'DNS', 'DNS'],
-  ['cdn', '◉', 'CDN'],
-  ['network', '▱', 'Network'],
-
-  /* Data */
-  ['database', '▤', 'Database'],
-  ['sql', '▤', 'SQL Database'],
-  ['nosql', '◫', 'NoSQL Database'],
-  ['cache', '▥', 'Cache'],
-  ['storage', '▱', 'Object Storage'],
-  ['queue', '▤', 'Message Queue'],
-  ['eventbus', '⚡', 'Event Bus'],
-  ['stream', '≋', 'Event Stream'],
-  ['backup', '◫', 'Backup'],
-
-  /* Security */
-  ['identity', '🔐', 'Identity Provider'],
-  ['user', '👤', 'User'],
-  ['users', '👥', 'Users'],
-  ['key', '🔑', 'Key / Secret'],
-  ['certificate', '▣', 'Certificate'],
-  ['security', '🛡', 'Security Control'],
-  ['siem', '◉', 'SIEM'],
-  ['soc', '◉', 'SOC'],
-  ['zone', '▧', 'Security Zone'],
-
-  /* Enterprise */
-  ['servicenow', '◉', 'ServiceNow'],
-  ['monitoring', '◌', 'Monitoring'],
-  ['logging', '≡', 'Logging'],
-  ['alert', '⚠', 'Alert'],
-  ['ticket', '🎫', 'Ticket'],
-  ['user-service', '◎', 'User Service'],
-  ['sso', '🔐', 'SSO'],
-
-  /* DevOps */
-  ['github', '●', 'GitHub'],
-  ['git', '◆', 'Git Repository'],
-  ['pipeline', '▶', 'CI/CD Pipeline'],
-  ['build', '⚙', 'Build'],
-  ['deploy', '🚀', 'Deployment'],
-  ['artifact', '□', 'Artifact'],
-  ['registry', '▣', 'Container Registry'],
-
-  /* AI */
-  ['ai', '✦', 'AI Service'],
-  ['llm', '✦', 'LLM'],
-  ['agent', '✧', 'AI Agent'],
-  ['vector', '◈', 'Vector Database'],
-  ['rag', '✦', 'RAG System'],
-
-  /* Generic shapes */
-  ['rectangle', '□', 'Rectangle'],
-  ['rounded', '▢', 'Rounded Rectangle'],
-  ['circle', '○', 'Circle'],
-  ['diamond', '◇', 'Decision'],
-  ['hexagon', '⬡', 'Hexagon'],
-  ['document', '▱', 'Document'],
-  ['note', '📝', 'Note'],
-  ['group', '▧', 'Group']
-];
-
-/* =========================================================
-   APPLICATION STATE
-   ========================================================= */
-
-let model = {
-  name: 'Untitled architecture',
-  version: '1.0',
   nodes: [],
   edges: [],
+  stickyNotes: [],
   comments: [],
   pins: [],
-  stickyNotes: [],
-  drawings: []
+
+  selected: new Set(),
+
+  tool: "select",
+
+  connectorType: "straight",
+  connectorStyle: "solid",
+
+  connectSource: null,
+
+  drawing: null,
+  dragging: null,
+  resizing: null,
+  marquee: null,
+
+  zoom: 1,
+
+  clipboard: null,
+
+  history: [],
+  future: [],
+
+  grid: true,
+  snap: true,
+
+  id: 1
 };
 
-let selectedIds = new Set();
-
-let selectedId = null;
-
-let connectSourceId = null;
-
-let connectMode = false;
-
-let impactMode = false;
-
-let dragState = null;
-
-let resizeState = null;
-
-let drawingState = null;
-
-let selectionState = null;
-
-let clipboardData = null;
-
-let zoom = 1;
-
-let currentEdgeType = 'straight';
-
-let currentArrowStart = false;
-
-let currentArrowEnd = true;
-
-let currentEdgeStyle = 'solid';
-
-let idCounter = 0;
-
-/* =========================================================
-   DOM HELPERS
-   ========================================================= */
+/* ============================================================
+   DOM
+   ============================================================ */
 
 const $ = id => document.getElementById(id);
 
-const canvas = $('canvas');
+const canvas = $("canvas");
+const canvasInner = $("canvasInner");
+const nodesLayer = $("nodes");
+const edgesSvg = $("edges");
 
-const nodesEl = $('nodes');
-
-const edgesEl = $('edges');
-
-const uid = prefix =>
-  `${prefix || 'id'}-${Date.now().toString(36)}-${(++idCounter).toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2, 7)}`;
-
-function safeElement(id) {
-  return $(id);
+function uid(prefix = "item") {
+  return `${prefix}-${Date.now().toString(36)}-${state.id++}`;
 }
 
-/* =========================================================
-   GENERAL HELPERS
-   ========================================================= */
+/* ============================================================
+   COMPONENT DEFINITIONS
+   ============================================================ */
 
-function setStatus(text) {
-  const status = $('status');
+const COMPONENTS = {
 
-  if (status) {
-    status.textContent = text;
+  "azure-service": {
+    icon: "☁️",
+    label: "Azure Service",
+    shape: "rounded"
+  },
+
+  "aws-service": {
+    icon: "☁",
+    label: "AWS Service",
+    shape: "rounded"
+  },
+
+  "gcp-service": {
+    icon: "☁",
+    label: "GCP Service",
+    shape: "rounded"
+  },
+
+  "cloud": {
+    icon: "☁️",
+    label: "Cloud",
+    shape: "rounded"
+  },
+
+  "virtual-machine": {
+    icon: "🖥️",
+    label: "Virtual Machine",
+    shape: "rounded"
+  },
+
+  "vm": {
+    icon: "🖥️",
+    label: "Virtual Machine",
+    shape: "rounded"
+  },
+
+  "server": {
+    icon: "▣",
+    label: "Server",
+    shape: "rounded"
+  },
+
+  "container": {
+    icon: "📦",
+    label: "Container",
+    shape: "rounded"
+  },
+
+  "kubernetes": {
+    icon: "☸️",
+    label: "Kubernetes",
+    shape: "hexagon"
+  },
+
+  "aks": {
+    icon: "☸️",
+    label: "AKS Cluster",
+    shape: "hexagon"
+  },
+
+  "docker": {
+    icon: "🐳",
+    label: "Docker",
+    shape: "rounded"
+  },
+
+  "api-gateway": {
+    icon: "↔️",
+    label: "API Gateway",
+    shape: "rounded"
+  },
+
+  "api": {
+    icon: "↔️",
+    label: "API Gateway",
+    shape: "rounded"
+  },
+
+  "load-balancer": {
+    icon: "⚖️",
+    label: "Load Balancer",
+    shape: "rounded"
+  },
+
+  "firewall": {
+    icon: "🔥",
+    label: "Firewall",
+    shape: "rounded"
+  },
+
+  "internet": {
+    icon: "🌐",
+    label: "Internet",
+    shape: "circle"
+  },
+
+  "network": {
+    icon: "🔗",
+    label: "Network",
+    shape: "rounded"
+  },
+
+  "vnet": {
+    icon: "▦",
+    label: "Virtual Network",
+    shape: "rounded"
+  },
+
+  "router": {
+    icon: "⇄",
+    label: "Router",
+    shape: "rounded"
+  },
+
+  "switch": {
+    icon: "⇆",
+    label: "Network Switch",
+    shape: "rounded"
+  },
+
+  "database": {
+    icon: "🗄️",
+    label: "Database",
+    shape: "database"
+  },
+
+  "storage": {
+    icon: "💾",
+    label: "Storage",
+    shape: "rounded"
+  },
+
+  "sql": {
+    icon: "🗄️",
+    label: "SQL Database",
+    shape: "database"
+  },
+
+  "nosql": {
+    icon: "◫",
+    label: "NoSQL Database",
+    shape: "database"
+  },
+
+  "cache": {
+    icon: "▥",
+    label: "Cache",
+    shape: "rounded"
+  },
+
+  "queue": {
+    icon: "▤",
+    label: "Message Queue",
+    shape: "rounded"
+  },
+
+  "eventbus": {
+    icon: "⚡",
+    label: "Event Bus",
+    shape: "rounded"
+  },
+
+  "backup": {
+    icon: "◫",
+    label: "Backup",
+    shape: "rounded"
+  },
+
+  "identity": {
+    icon: "🔐",
+    label: "Identity Provider",
+    shape: "rounded"
+  },
+
+  "security": {
+    icon: "🛡️",
+    label: "Security Control",
+    shape: "rounded"
+  },
+
+  "siem": {
+    icon: "◉",
+    label: "SIEM",
+    shape: "rounded"
+  },
+
+  "servicenow": {
+    icon: "◉",
+    label: "ServiceNow",
+    shape: "rounded"
+  },
+
+  "monitoring": {
+    icon: "◌",
+    label: "Monitoring",
+    shape: "rounded"
+  },
+
+  "logging": {
+    icon: "≡",
+    label: "Logging",
+    shape: "rounded"
+  },
+
+  "alert": {
+    icon: "⚠️",
+    label: "Alert",
+    shape: "rounded"
+  },
+
+  "ticket": {
+    icon: "🎫",
+    label: "Ticket",
+    shape: "rounded"
+  },
+
+  "github": {
+    icon: "●",
+    label: "GitHub",
+    shape: "rounded"
+  },
+
+  "pipeline": {
+    icon: "▶",
+    label: "CI/CD Pipeline",
+    shape: "rounded"
+  },
+
+  "build": {
+    icon: "⚙",
+    label: "Build",
+    shape: "rounded"
+  },
+
+  "deploy": {
+    icon: "🚀",
+    label: "Deployment",
+    shape: "rounded"
+  },
+
+  "registry": {
+    icon: "▣",
+    label: "Container Registry",
+    shape: "rounded"
+  },
+
+  "ai": {
+    icon: "✦",
+    label: "AI Service",
+    shape: "rounded"
+  },
+
+  "llm": {
+    icon: "✦",
+    label: "LLM",
+    shape: "rounded"
+  },
+
+  "agent": {
+    icon: "✧",
+    label: "AI Agent",
+    shape: "rounded"
+  },
+
+  "vector": {
+    icon: "◈",
+    label: "Vector Database",
+    shape: "database"
+  },
+
+  "rag": {
+    icon: "✦",
+    label: "RAG System",
+    shape: "rounded"
+  },
+
+  "rectangle": {
+    icon: "□",
+    label: "Rectangle",
+    shape: "rectangle"
+  },
+
+  "rounded": {
+    icon: "▢",
+    label: "Rounded Rectangle",
+    shape: "rounded"
+  },
+
+  "circle": {
+    icon: "○",
+    label: "Circle",
+    shape: "circle"
+  },
+
+  "diamond": {
+    icon: "◇",
+    label: "Decision",
+    shape: "diamond"
+  },
+
+  "hexagon": {
+    icon: "⬡",
+    label: "Hexagon",
+    shape: "hexagon"
+  },
+
+  "document": {
+    icon: "▱",
+    label: "Document",
+    shape: "document"
+  },
+
+  "zone": {
+    icon: "▧",
+    label: "Security Zone",
+    shape: "zone"
   }
-}
+};
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(
-    /[&<>'"]/g,
-    char =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
-      })[char]
-  );
-}
+/* ============================================================
+   UTILITY
+   ============================================================ */
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function catalogItem(type) {
-  return catalog.find(item => item[0] === type);
-}
-
-function iconFor(type) {
-  return catalogItem(type)?.[1] || '◇';
-}
-
-function typeName(type) {
-  return catalogItem(type)?.[2] || type || 'Component';
+function componentInfo(type) {
+  return COMPONENTS[type] || {
+    icon: "◇",
+    label: type || "Component",
+    shape: "rounded"
+  };
 }
 
 function nodeById(id) {
-  return model.nodes.find(node => node.id === id);
+  return state.nodes.find(n => n.id === id);
 }
 
 function edgeById(id) {
-  return model.edges.find(edge => edge.id === id);
+  return state.edges.find(e => e.id === id);
 }
 
-function emptyVisible() {
-  const empty = $('canvasEmpty');
-
-  if (empty) {
-    empty.hidden = model.nodes.length > 0;
-  }
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
 }
 
-function ensureModel() {
-  if (!model || typeof model !== 'object') {
-    model = {
-      name: 'Untitled architecture',
-      version: '1.0',
-      nodes: [],
-      edges: [],
-      comments: [],
-      pins: [],
-      stickyNotes: [],
-      drawings: []
-    };
-  }
-
-  model.nodes ||= [];
-  model.edges ||= [];
-  model.comments ||= [];
-  model.pins ||= [];
-  model.stickyNotes ||= [];
-  model.drawings ||= [];
+function snapValue(v) {
+  if (!state.snap) return v;
+  return Math.round(v / 10) * 10;
 }
 
-/* =========================================================
-   NODE CREATION
-   ========================================================= */
+function canvasPoint(event) {
 
-function createNode(type, x = 100, y = 100, options = {}) {
-  const zone = type === 'zone' || type === 'group';
+  const rect = canvas.getBoundingClientRect();
 
-  const node = {
-    id: uid('node'),
-
-    type,
-
-    label: options.label || typeName(type),
-
-    x,
-
-    y,
-
-    width:
-      options.width ||
-      (zone ? 300 : type === 'circle' ? 100 : 150),
-
-    height:
-      options.height ||
-      (zone ? 190 : type === 'circle' ? 100 : 76),
-
-    environment: options.environment || 'Production',
-
-    owner: options.owner || '',
-
-    description: options.description || '',
-
-    shape:
-      options.shape ||
-      getShapeForType(type),
-
-    image:
-      options.image || null,
-
-    imageName:
-      options.imageName || '',
-
-    imageMime:
-      options.imageMime || '',
-
-    rotation:
-      options.rotation || 0,
-
-    zIndex:
-      options.zIndex ?? model.nodes.length,
-
-    locked:
-      Boolean(options.locked),
-
-    fill:
-      options.fill || '',
-
-    stroke:
-      options.stroke || '',
-
-    textColor:
-      options.textColor || ''
+  return {
+    x: (event.clientX - rect.left + canvas.scrollLeft) / state.zoom,
+    y: (event.clientY - rect.top + canvas.scrollTop) / state.zoom
   };
-
-  model.nodes.push(node);
-
-  return node;
 }
 
-function getShapeForType(type) {
-  if (
-    [
-      'circle',
-      'user',
-      'users',
-      'internet'
-    ].includes(type)
-  ) {
-    return 'circle';
-  }
+function downloadFile(filename, content, type) {
 
-  if (
-    [
-      'diamond'
-    ].includes(type)
-  ) {
-    return 'diamond';
-  }
+  const blob = new Blob([content], { type });
 
-  if (
-    [
-      'hexagon',
-      'kubernetes',
-      'aks'
-    ].includes(type)
-  ) {
-    return 'hexagon';
-  }
+  const url = URL.createObjectURL(blob);
 
-  if (
-    [
-      'document'
-    ].includes(type)
-  ) {
-    return 'document';
-  }
+  const a = document.createElement("a");
 
-  return 'rounded';
+  a.href = url;
+  a.download = filename;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+  URL.revokeObjectURL(url);
 }
 
-function addNode(type, x = 100, y = 100, options = {}) {
-  const node = createNode(type, x, y, options);
+function status(message) {
+
+  const el = $("status");
+
+  if (el) {
+    el.textContent = message;
+  }
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+
+function snapshot() {
+
+  return JSON.stringify({
+    name: state.name,
+    nodes: state.nodes,
+    edges: state.edges,
+    stickyNotes: state.stickyNotes,
+    comments: state.comments,
+    pins: state.pins
+  });
+}
+
+function pushHistory() {
+
+  state.history.push(snapshot());
+
+  if (state.history.length > 50) {
+    state.history.shift();
+  }
+
+  state.future.length = 0;
+}
+
+function restoreSnapshot(data) {
+
+  const parsed = JSON.parse(data);
+
+  state.name = parsed.name || "Untitled architecture";
+
+  state.nodes = parsed.nodes || [];
+  state.edges = parsed.edges || [];
+
+  state.stickyNotes = parsed.stickyNotes || [];
+  state.comments = parsed.comments || [];
+  state.pins = parsed.pins || [];
 
   clearSelection();
 
-  selectSingle(node.id);
+  render();
+}
+
+function undo() {
+
+  if (!state.history.length) return;
+
+  state.future.push(snapshot());
+
+  const previous = state.history.pop();
+
+  restoreSnapshot(previous);
+
+  status("Undo");
+}
+
+function redo() {
+
+  if (!state.future.length) return;
+
+  state.history.push(snapshot());
+
+  const next = state.future.pop();
+
+  restoreSnapshot(next);
+
+  status("Redo");
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+function clearSelection() {
+
+  state.selected.clear();
+
+  state.connectSource = null;
+}
+
+function selectOnly(id) {
+
+  state.selected.clear();
+
+  if (id) {
+    state.selected.add(id);
+  }
 
   render();
+}
+
+function toggleSelection(id) {
+
+  if (state.selected.has(id)) {
+    state.selected.delete(id);
+  } else {
+    state.selected.add(id);
+  }
+
+  render();
+}
+
+function selectedNodes() {
+
+  return state.nodes.filter(n =>
+    state.selected.has(n.id)
+  );
+}
+
+/* ============================================================
+   NODE CREATION
+   ============================================================ */
+
+function createNode(type, x, y, extra = {}) {
+
+  const info = componentInfo(type);
+
+  return {
+    id: uid("node"),
+
+    type,
+
+    label: extra.label || info.label,
+
+    icon: info.icon,
+
+    shape: extra.shape || info.shape,
+
+    x: snapValue(x),
+    y: snapValue(y),
+
+    width: extra.width || 150,
+    height: extra.height || 76,
+
+    environment: extra.environment || "Production",
+
+    owner: extra.owner || "",
+
+    description: extra.description || "",
+
+    image: extra.image || null,
+
+    imageName: extra.imageName || "",
+
+    zIndex: state.nodes.length
+  };
+}
+
+function addNode(type, x, y, extra = {}) {
+
+  pushHistory();
+
+  const node = createNode(type, x, y, extra);
+
+  state.nodes.push(node);
+
+  state.selected.clear();
+
+  state.selected.add(node.id);
+
+  render();
+
+  status(`${componentInfo(type).label} added`);
 
   return node;
 }
 
-/* =========================================================
-   NODE HTML
-   ========================================================= */
+/* ============================================================
+   IMAGE NODE
+   ============================================================ */
 
-function nodeShapeClass(node) {
-  return `shape-${node.shape || 'rounded'}`;
-}
+function addImage(file, x, y) {
 
-function nodeInnerHtml(node) {
-  const image = node.image;
+  if (!file || !file.type.startsWith("image/")) {
 
-  if (image) {
-    return `
-      <div class="image-content">
-        <img
-          src="${escapeHtml(image)}"
-          alt="${escapeHtml(node.label)}"
-          draggable="false"
-        />
-        <span class="node-title image-title">
-          ${escapeHtml(node.label)}
-        </span>
-      </div>
-    `;
-  }
+    status("Please select a PNG, JPG, JPEG, GIF, SVG or WEBP image");
 
-  return `
-    <span class="node-icon">${iconFor(node.type)}</span>
-    <span class="node-type">${escapeHtml(typeName(node.type))}</span>
-    <span class="node-title">${escapeHtml(node.label)}</span>
-    ${
-      node.environment || node.owner
-        ? `<span class="node-meta">
-            ${escapeHtml(node.environment || '')}
-            ${
-              node.owner
-                ? ` · ${escapeHtml(node.owner)}`
-                : ''
-            }
-          </span>`
-        : ''
-    }
-  `;
-}
-
-/* =========================================================
-   CONNECTION PORTS
-   ========================================================= */
-
-function connectionPortsHtml(node) {
-  return `
-    <span
-      class="connection-port top"
-      data-port="top"
-      data-node-id="${node.id}"
-    ></span>
-
-    <span
-      class="connection-port right"
-      data-port="right"
-      data-node-id="${node.id}"
-    ></span>
-
-    <span
-      class="connection-port bottom"
-      data-port="bottom"
-      data-node-id="${node.id}"
-    ></span>
-
-    <span
-      class="connection-port left"
-      data-port="left"
-      data-node-id="${node.id}"
-    ></span>
-  `;
-}
-
-function resizeHandlesHtml() {
-  return `
-    <span class="resize-handle nw" data-resize="nw"></span>
-    <span class="resize-handle ne" data-resize="ne"></span>
-    <span class="resize-handle sw" data-resize="sw"></span>
-    <span class="resize-handle se" data-resize="se"></span>
-  `;
-}
-
-/* =========================================================
-   RENDER
-   ========================================================= */
-
-function render() {
-  ensureModel();
-
-  const nameInput = $('diagramName');
-
-  if (nameInput) {
-    nameInput.value = model.name;
-  }
-
-  if (!nodesEl) {
     return;
   }
 
-  nodesEl.innerHTML = '';
+  const reader = new FileReader();
 
-  const sortedNodes = [...model.nodes].sort(
-    (a, b) =>
-      (a.zIndex ?? 0) -
-      (b.zIndex ?? 0)
-  );
+  reader.onload = () => {
 
-  sortedNodes.forEach(node => {
-    const element = document.createElement('article');
+    pushHistory();
 
-    const selected =
-      selectedIds.has(node.id);
+    const node = createNode(
+      "image",
+      x,
+      y,
+      {
+        label: file.name,
+        width: 220,
+        height: 150,
+        image: reader.result,
+        imageName: file.name
+      }
+    );
 
-    const isImage =
-      Boolean(node.image);
+    node.shape = "image";
 
-    element.className =
-      `node ${nodeShapeClass(node)} ` +
-      `${node.type === 'zone' ? 'zone' : ''} ` +
-      `${isImage ? 'image-node' : ''} ` +
-      `${selected ? 'selected' : ''} ` +
-      `${impactMode && selectedId && downstream(selectedId).has(node.id) ? 'impact' : ''}`;
+    state.nodes.push(node);
 
-    element.dataset.id = node.id;
+    state.selected.clear();
 
-    element.style.left = `${node.x}px`;
+    state.selected.add(node.id);
 
-    element.style.top = `${node.y}px`;
+    render();
 
-    element.style.width = `${node.width}px`;
+    status(`Image "${file.name}" added`);
+  };
 
-    element.style.height = `${node.height}px`;
+  reader.readAsDataURL(file);
+}
 
-    element.style.transform =
-      `rotate(${node.rotation || 0}deg)`;
+/* ============================================================
+   NODE RENDERING
+   ============================================================ */
 
-    if (node.fill) {
-      element.style.background = node.fill;
+function renderNodes() {
+
+  if (!nodesLayer) return;
+
+  nodesLayer.innerHTML = "";
+
+  [...state.nodes]
+    .sort((a, b) => a.zIndex - b.zIndex)
+    .forEach(node => {
+
+      const el = document.createElement("div");
+
+      const selected =
+        state.selected.has(node.id);
+
+      el.className =
+        `node ${selected ? "selected" : ""} ` +
+        `${node.shape === "zone" ? "zone" : ""} ` +
+        `${node.image ? "image-node" : ""}`;
+
+      el.dataset.id = node.id;
+
+      el.style.left = `${node.x}px`;
+      el.style.top = `${node.y}px`;
+
+      el.style.width = `${node.width}px`;
+      el.style.height = `${node.height}px`;
+
+      if (node.image) {
+
+        el.innerHTML = `
+          <img
+            src="${node.image}"
+            alt="${node.label}"
+            draggable="false"
+          />
+
+          <div class="node-image-label">
+            ${node.label}
+          </div>
+        `;
+
+      } else {
+
+        el.innerHTML = `
+          <span class="node-icon">
+            ${node.icon}
+          </span>
+
+          <span class="node-type">
+            ${node.type}
+          </span>
+
+          <span class="node-title">
+            ${node.label}
+          </span>
+
+          <span class="node-meta">
+            ${node.environment || ""}
+          </span>
+        `;
+      }
+
+      /* CONNECTION PORTS */
+
+      ["top", "right", "bottom", "left"].forEach(side => {
+
+        const port = document.createElement("span");
+
+        port.className =
+          `connection-port ${side}`;
+
+        port.dataset.port = side;
+
+        port.dataset.nodeId = node.id;
+
+        el.appendChild(port);
+      });
+
+      /* RESIZE HANDLES */
+
+      ["nw", "ne", "sw", "se"].forEach(handle => {
+
+        const h = document.createElement("span");
+
+        h.className =
+          `resize-handle ${handle}`;
+
+        h.dataset.resize = handle;
+
+        el.appendChild(h);
+      });
+
+      nodesLayer.appendChild(el);
+    });
+}
+
+/* ============================================================
+   CONNECTION GEOMETRY
+   ============================================================ */
+
+function center(node) {
+
+  return {
+    x: node.x + node.width / 2,
+    y: node.y + node.height / 2
+  };
+}
+
+function portPoint(node, port) {
+
+  const c = center(node);
+
+  switch (port) {
+
+    case "top":
+      return {
+        x: c.x,
+        y: node.y
+      };
+
+    case "right":
+      return {
+        x: node.x + node.width,
+        y: c.y
+      };
+
+    case "bottom":
+      return {
+        x: c.x,
+        y: node.y + node.height
+      };
+
+    case "left":
+      return {
+        x: node.x,
+        y: c.y
+      };
+
+    default:
+      return c;
+  }
+}
+
+function nearestPort(nodeA, nodeB) {
+
+  const a = center(nodeA);
+  const b = center(nodeB);
+
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+
+    return {
+      from: dx >= 0 ? "right" : "left",
+      to: dx >= 0 ? "left" : "right"
+    };
+
+  }
+
+  return {
+    from: dy >= 0 ? "bottom" : "top",
+    to: dy >= 0 ? "top" : "bottom"
+  };
+}
+
+/* ============================================================
+   EDGE PATHS
+   ============================================================ */
+
+function straightPath(a, b) {
+
+  return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+}
+
+function curvedPath(a, b) {
+
+  const dx = b.x - a.x;
+
+  const bend = Math.max(80, Math.abs(dx) * 0.5);
+
+  return `
+    M ${a.x} ${a.y}
+    C ${a.x + bend} ${a.y},
+      ${b.x - bend} ${b.y},
+      ${b.x} ${b.y}
+  `;
+}
+
+function elbowPath(a, b) {
+
+  const midX = (a.x + b.x) / 2;
+
+  return `
+    M ${a.x} ${a.y}
+    L ${midX} ${a.y}
+    L ${midX} ${b.y}
+    L ${b.x} ${b.y}
+  `;
+}
+
+function wavyPath(a, b) {
+
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+
+  const length =
+    Math.sqrt(dx * dx + dy * dy);
+
+  const nx = -dy / Math.max(length, 1);
+  const ny = dx / Math.max(length, 1);
+
+  const amplitude = 15;
+
+  const segments = 8;
+
+  let path =
+    `M ${a.x} ${a.y}`;
+
+  for (let i = 1; i <= segments; i++) {
+
+    const t = i / segments;
+
+    const x =
+      a.x + dx * t +
+      nx *
+      Math.sin(t * Math.PI * 4) *
+      amplitude;
+
+    const y =
+      a.y + dy * t +
+      ny *
+      Math.sin(t * Math.PI * 4) *
+      amplitude;
+
+    path += ` L ${x} ${y}`;
+  }
+
+  return path;
+}
+
+/* ============================================================
+   FREE FORM PATH
+   ============================================================ */
+
+function freePath(points) {
+
+  if (!points || points.length < 2) {
+    return "";
+  }
+
+  let d =
+    `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+
+    const p = points[i];
+
+    d +=
+      ` L ${p.x} ${p.y}`;
+  }
+
+  return d;
+}
+
+/* ============================================================
+   EDGE RENDERING
+   ============================================================ */
+
+function renderEdges() {
+
+  if (!edgesSvg) return;
+
+  edgesSvg.innerHTML = `
+    <defs>
+
+      <marker
+        id="arrow"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto"
+      >
+        <path
+          d="M 0 0 L 10 5 L 0 10 z"
+          fill="#64748b"
+        />
+      </marker>
+
+      <marker
+        id="arrowSelected"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="8"
+        markerHeight="8"
+        orient="auto"
+      >
+        <path
+          d="M 0 0 L 10 5 L 0 10 z"
+          fill="#2764f0"
+        />
+      </marker>
+
+    </defs>
+  `;
+
+  state.edges.forEach(edge => {
+
+    let pathData = "";
+
+    if (edge.freeform) {
+
+      pathData =
+        freePath(edge.points);
+
+    } else {
+
+      const from = nodeById(edge.from);
+
+      const to = nodeById(edge.to);
+
+      if (!from || !to) return;
+
+      const ports =
+        edge.fromPort && edge.toPort
+          ? {
+              from: edge.fromPort,
+              to: edge.toPort
+            }
+          : nearestPort(from, to);
+
+      const a =
+        portPoint(from, ports.from);
+
+      const b =
+        portPoint(to, ports.to);
+
+      switch (edge.type) {
+
+        case "elbow":
+          pathData =
+            elbowPath(a, b);
+          break;
+
+        case "curved":
+          pathData =
+            curvedPath(a, b);
+          break;
+
+        case "wavy":
+          pathData =
+            wavyPath(a, b);
+          break;
+
+        default:
+          pathData =
+            straightPath(a, b);
+      }
     }
 
-    if (node.stroke) {
-      element.style.borderColor = node.stroke;
+    const path =
+      document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
+
+    path.setAttribute(
+      "d",
+      pathData
+    );
+
+    path.classList.add("edge");
+
+    if (state.selected.has(edge.id)) {
+      path.classList.add("selected");
     }
 
-    element.innerHTML =
-      nodeInnerHtml(node) +
-      connectionPortsHtml(node) +
-      resizeHandlesHtml();
+    if (edge.style === "dashed") {
+      path.classList.add("dashed");
+    }
 
-    element.addEventListener(
-      'pointerdown',
-      startNodePointer
+    if (edge.style === "dotted") {
+      path.classList.add("dotted");
+    }
+
+    path.style.pointerEvents = "stroke";
+
+    path.style.cursor = "pointer";
+
+    if (edge.arrow !== false) {
+
+      path.setAttribute(
+        "marker-end",
+        state.selected.has(edge.id)
+          ? "url(#arrowSelected)"
+          : "url(#arrow)"
+      );
+    }
+
+    path.addEventListener(
+      "pointerdown",
+      event => {
+
+        event.stopPropagation();
+
+        if (state.tool === "select") {
+
+          clearSelection();
+
+          state.selected.add(edge.id);
+
+          render();
+        }
+      }
     );
 
-    element.addEventListener(
-      'click',
-      selectNode
-    );
+    edgesSvg.appendChild(path);
 
-    element.addEventListener(
-      'dblclick',
-      editNodeLabel
-    );
+    /* LABEL */
 
-    nodesEl.appendChild(element);
+    if (edge.label) {
+
+      const text =
+        document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text"
+        );
+
+      text.classList.add("edge-label");
+
+      text.textContent =
+        edge.label;
+
+      let x = 0;
+      let y = 0;
+
+      if (edge.freeform) {
+
+        const p =
+          edge.points[
+            Math.floor(
+              edge.points.length / 2
+            )
+          ];
+
+        x = p.x;
+        y = p.y;
+
+      } else {
+
+        const from = nodeById(edge.from);
+        const to = nodeById(edge.to);
+
+        if (from && to) {
+
+          const a = center(from);
+          const b = center(to);
+
+          x = (a.x + b.x) / 2;
+          y = (a.y + b.y) / 2;
+        }
+      }
+
+      text.setAttribute("x", x);
+      text.setAttribute("y", y - 8);
+
+      edgesSvg.appendChild(text);
+    }
   });
+}
+
+/* ============================================================
+   RENDER ALL
+   ============================================================ */
+
+function render() {
 
   renderEdges();
+
+  renderNodes();
 
   renderStickyNotes();
 
@@ -552,4267 +1168,3295 @@ function render() {
 
   renderInspector();
 
-  emptyVisible();
-
-  updateZoomDisplay();
+  updateZoom();
 }
 
-/* =========================================================
-   EDGES
-   ========================================================= */
-
-function renderEdges() {
-  if (!edgesEl || !canvas) {
-    return;
-  }
-
-  const width =
-    Math.max(
-      canvas.clientWidth,
-      3000
-    );
-
-  const height =
-    Math.max(
-      canvas.clientHeight,
-      2000
-    );
-
-  edgesEl.setAttribute(
-    'viewBox',
-    `0 0 ${width} ${height}`
-  );
-
-  const defs = `
-    <defs>
-
-      <marker
-        id="arrow-end"
-        viewBox="0 0 10 10"
-        refX="9"
-        refY="5"
-        markerWidth="7"
-        markerHeight="7"
-        orient="auto-start-reverse"
-      >
-        <path
-          d="M 0 0 L 10 5 L 0 10 z"
-          fill="currentColor"
-        />
-      </marker>
-
-      <marker
-        id="arrow-start"
-        viewBox="0 0 10 10"
-        refX="1"
-        refY="5"
-        markerWidth="7"
-        markerHeight="7"
-        orient="auto"
-      >
-        <path
-          d="M 10 0 L 0 5 L 10 10 z"
-          fill="currentColor"
-        />
-      </marker>
-
-    </defs>
-  `;
-
-  const impacted =
-    impactMode && selectedId
-      ? downstream(selectedId)
-      : new Set();
-
-  const svg = model.edges
-    .map(edge => {
-      const from =
-        nodeById(edge.from);
-
-      const to =
-        nodeById(edge.to);
-
-      if (!from || !to) {
-        return '';
-      }
-
-      const points =
-        calculateConnectionPoints(
-          from,
-          to,
-          edge.fromPort,
-          edge.toPort
-        );
-
-      const selected =
-        selectedIds.has(
-          `edge:${edge.id}`
-        );
-
-      const active =
-        impacted.has(to.id) ||
-        edge.from === selectedId;
-
-      const path =
-        buildEdgePath(
-          points.x1,
-          points.y1,
-          points.x2,
-          points.y2,
-          edge.type || 'straight'
-        );
-
-      const markerStart =
-        edge.arrowStart
-          ? 'url(#arrow-start)'
-          : 'none';
-
-      const markerEnd =
-        edge.arrowEnd !== false
-          ? 'url(#arrow-end)'
-          : 'none';
-
-      const classes = [
-        'edge',
-        edge.type || 'straight',
-        edge.style || 'solid',
-        selected ? 'selected' : '',
-        active ? 'highlight' : ''
-      ]
-        .filter(Boolean)
-        .join(' ');
-
-      const label =
-        edge.label
-          ? `
-            <text
-              class="edge-label ${selected ? 'selected' : ''}"
-              x="${(points.x1 + points.x2) / 2}"
-              y="${(points.y1 + points.y2) / 2 - 7}"
-            >
-              ${escapeHtml(edge.label)}
-            </text>
-          `
-          : '';
-
-      return `
-        <path
-          class="${classes}"
-          data-edge-id="${edge.id}"
-          d="${path}"
-          marker-start="${markerStart}"
-          marker-end="${markerEnd}"
-          style="color:${edge.color || '#64748b'}"
-        />
-
-        ${label}
-      `;
-    })
-    .join('');
-
-  edgesEl.innerHTML =
-    defs + svg;
-
-  edgesEl
-    .querySelectorAll('.edge')
-    .forEach(edgeElement => {
-      edgeElement.addEventListener(
-        'click',
-        event => {
-          event.stopPropagation();
-
-          const id =
-            edgeElement.dataset.edgeId;
-
-          clearSelection();
-
-          selectedIds.add(
-            `edge:${id}`
-          );
-
-          renderInspector();
-        }
-      );
-    });
-}
-
-/* =========================================================
-   CONNECTION GEOMETRY
-   ========================================================= */
-
-function calculateConnectionPoints(
-  from,
-  to,
-  fromPort,
-  toPort
-) {
-  const centerFrom = {
-    x: from.x + from.width / 2,
-    y: from.y + from.height / 2
-  };
-
-  const centerTo = {
-    x: to.x + to.width / 2,
-    y: to.y + to.height / 2
-  };
-
-  const startPort =
-    fromPort ||
-    chooseBestPort(
-      from,
-      centerTo
-    );
-
-  const endPort =
-    toPort ||
-    chooseBestPort(
-      to,
-      centerFrom
-    );
-
-  return {
-    x1: portPoint(
-      from,
-      startPort
-    ).x,
-
-    y1: portPoint(
-      from,
-      startPort
-    ).y,
-
-    x2: portPoint(
-      to,
-      endPort
-    ).x,
-
-    y2: portPoint(
-      to,
-      endPort
-    ).y
-  };
-}
-
-function chooseBestPort(
-  node,
-  target
-) {
-  const centerX =
-    node.x + node.width / 2;
-
-  const centerY =
-    node.y + node.height / 2;
-
-  const dx =
-    target.x - centerX;
-
-  const dy =
-    target.y - centerY;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    return dx >= 0
-      ? 'right'
-      : 'left';
-  }
-
-  return dy >= 0
-    ? 'bottom'
-    : 'top';
-}
-
-function portPoint(node, port) {
-  switch (port) {
-    case 'top':
-      return {
-        x: node.x + node.width / 2,
-        y: node.y
-      };
-
-    case 'right':
-      return {
-        x: node.x + node.width,
-        y: node.y + node.height / 2
-      };
-
-    case 'bottom':
-      return {
-        x: node.x + node.width / 2,
-        y: node.y + node.height
-      };
-
-    case 'left':
-      return {
-        x: node.x,
-        y: node.y + node.height / 2
-      };
-
-    default:
-      return {
-        x: node.x + node.width,
-        y: node.y + node.height / 2
-      };
-  }
-}
-
-/* =========================================================
-   EDGE PATHS
-   ========================================================= */
-
-function buildEdgePath(
-  x1,
-  y1,
-  x2,
-  y2,
-  type
-) {
-  switch (type) {
-    case 'curved':
-      return buildCurvedPath(
-        x1,
-        y1,
-        x2,
-        y2
-      );
-
-    case 'bezier':
-      return buildBezierPath(
-        x1,
-        y1,
-        x2,
-        y2
-      );
-
-    case 'wavy':
-      return buildWavyPath(
-        x1,
-        y1,
-        x2,
-        y2
-      );
-
-    case 'orthogonal':
-      return buildOrthogonalPath(
-        x1,
-        y1,
-        x2,
-        y2
-      );
-
-    default:
-      return `M ${x1} ${y1} L ${x2} ${y2}`;
-  }
-}
-
-function buildCurvedPath(
-  x1,
-  y1,
-  x2,
-  y2
-) {
-  const dx =
-    Math.max(
-      50,
-      Math.abs(x2 - x1) * 0.45
-    );
-
-  return `
-    M ${x1} ${y1}
-    C ${x1 + dx} ${y1},
-      ${x2 - dx} ${y2},
-      ${x2} ${y2}
-  `;
-}
-
-function buildBezierPath(
-  x1,
-  y1,
-  x2,
-  y2
-) {
-  const dx =
-    (x2 - x1) * 0.35;
-
-  const dy =
-    (y2 - y1) * 0.25;
-
-  return `
-    M ${x1} ${y1}
-    C ${x1 + dx} ${y1 + dy},
-      ${x2 - dx} ${y2 - dy},
-      ${x2} ${y2}
-  `;
-}
-
-function buildOrthogonalPath(
-  x1,
-  y1,
-  x2,
-  y2
-) {
-  const midX =
-    (x1 + x2) / 2;
-
-  return `
-    M ${x1} ${y1}
-    L ${midX} ${y1}
-    L ${midX} ${y2}
-    L ${x2} ${y2}
-  `;
-}
-
-function buildWavyPath(
-  x1,
-  y1,
-  x2,
-  y2
-) {
-  const dx =
-    x2 - x1;
-
-  const dy =
-    y2 - y1;
-
-  const distance =
-    Math.sqrt(
-      dx * dx +
-      dy * dy
-    );
-
-  const segments =
-    Math.max(
-      4,
-      Math.floor(distance / 45)
-    );
-
-  const amplitude =
-    Math.min(
-      18,
-      Math.max(
-        8,
-        distance / 30
-      )
-    );
-
-  let path =
-    `M ${x1} ${y1}`;
-
-  for (
-    let i = 1;
-    i <= segments;
-    i++
-  ) {
-    const t =
-      i / segments;
-
-    const px =
-      x1 + dx * t;
-
-    const py =
-      y1 + dy * t;
-
-    const previousT =
-      (i - 1) / segments;
-
-    const previousX =
-      x1 + dx * previousT;
-
-    const previousY =
-      y1 + dy * previousT;
-
-    const nx =
-      -dy / distance;
-
-    const ny =
-      dx / distance;
-
-    const sign =
-      i % 2 === 0
-        ? 1
-        : -1;
-
-    const cx =
-      (previousX + px) / 2 +
-      nx * amplitude * sign;
-
-    const cy =
-      (previousY + py) / 2 +
-      ny * amplitude * sign;
-
-    path += `
-      Q ${cx} ${cy}
-        ${px} ${py}
-    `;
-  }
-
-  return path;
-}
-
-/* =========================================================
-   NODE POINTER / DRAGGING
-   ========================================================= */
+/* ============================================================
+   NODE POINTER EVENTS
+   ============================================================ */
 
 function startNodePointer(event) {
-  if (event.button !== 0) {
+
+  if (event.target.closest(".connection-port")) {
     return;
   }
 
-  const element =
+  if (event.target.closest(".resize-handle")) {
+
+    startResize(event);
+
+    return;
+  }
+
+  const el =
     event.currentTarget;
 
+  const id =
+    el.dataset.id;
+
   const node =
-    nodeById(
-      element.dataset.id
-    );
+    nodeById(id);
 
-  if (!node || node.locked) {
-    return;
-  }
+  if (!node) return;
 
-  if (
-    event.target.closest(
-      '.connection-port'
-    )
-  ) {
-    return;
-  }
+  if (state.tool === "connect") {
 
-  if (
-    event.target.closest(
-      '.resize-handle'
-    )
-  ) {
-    startResize(
-      event,
-      node
-    );
+    if (!state.connectSource) {
 
-    return;
-  }
+      state.connectSource = id;
 
-  const multi =
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey;
+      state.selected.clear();
 
-  if (!selectedIds.has(node.id)) {
-    if (multi) {
-      selectedIds.add(node.id);
-    } else {
-      clearSelection();
-      selectedIds.add(node.id);
+      state.selected.add(id);
+
+      render();
+
+      status(
+        "Select the destination component"
+      );
+
+    } else if (
+      state.connectSource !== id
+    ) {
+
+      createEdge(
+        state.connectSource,
+        id
+      );
+
+      state.connectSource = null;
     }
 
-    selectedId =
-      node.id;
+    return;
   }
 
-  renderInspector();
+  if (state.tool !== "select") {
+    return;
+  }
 
-  const rect =
-    canvas.getBoundingClientRect();
+  if (event.shiftKey) {
 
-  const pointer =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
+    toggleSelection(id);
 
-  dragState = {
-    ids: [...selectedIds].filter(
-      id => !id.startsWith('edge:')
-    ),
+  } else if (!state.selected.has(id)) {
 
-    startPointer: pointer,
+    selectOnly(id);
+  }
 
-    original: new Map(
-      [...selectedIds]
-        .filter(
-          id => !id.startsWith('edge:')
-        )
+  event.preventDefault();
+
+  const point =
+    canvasPoint(event);
+
+  state.dragging = {
+
+    nodeIds:
+      [...state.selected]
+        .filter(id =>
+          nodeById(id)
+        ),
+
+    startX: point.x,
+
+    startY: point.y,
+
+    positions:
+      [...state.selected]
         .map(id => {
-          const item =
+
+          const n =
             nodeById(id);
 
-          return [
-            id,
-            {
-              x: item.x,
-              y: item.y
-            }
-          ];
+          return n
+            ? {
+                id,
+                x: n.x,
+                y: n.y
+              }
+            : null;
         })
-    )
+        .filter(Boolean)
   };
 
-  element.setPointerCapture?.(
+  pushHistory();
+
+  el.setPointerCapture?.(
     event.pointerId
   );
-
-  event.stopPropagation();
 }
 
-window.addEventListener(
-  'pointermove',
+/* ============================================================
+   NODE MOVE
+   ============================================================ */
+
+document.addEventListener(
+  "pointermove",
   event => {
-    if (dragState) {
-      dragSelectedNodes(event);
-    }
 
-    if (resizeState) {
-      resizeSelectedNode(event);
-    }
+    if (!state.dragging) return;
 
-    if (drawingState) {
-      continueDrawing(event);
-    }
+    const point =
+      canvasPoint(event);
 
-    if (selectionState) {
-      continueSelection(event);
+    const dx =
+      point.x -
+      state.dragging.startX;
+
+    const dy =
+      point.y -
+      state.dragging.startY;
+
+    state.dragging.positions
+      .forEach(original => {
+
+        const node =
+          nodeById(original.id);
+
+        if (!node) return;
+
+        node.x =
+          snapValue(
+            original.x + dx
+          );
+
+        node.y =
+          snapValue(
+            original.y + dy
+          );
+      });
+
+    render();
+  }
+);
+
+document.addEventListener(
+  "pointerup",
+  () => {
+
+    if (state.dragging) {
+
+      state.dragging = null;
+
+      status("Moved");
     }
   }
 );
 
-window.addEventListener(
-  'pointerup',
-  event => {
-    if (dragState) {
-      dragState = null;
+/* ============================================================
+   RESIZE
+   ============================================================ */
 
-      render();
-    }
-
-    if (resizeState) {
-      resizeState = null;
-
-      render();
-    }
-
-    if (drawingState) {
-      finishDrawing(event);
-    }
-
-    if (selectionState) {
-      finishSelection(event);
-    }
-  }
-);
-
-function dragSelectedNodes(event) {
-  const pointer =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  const dx =
-    pointer.x -
-    dragState.startPointer.x;
-
-  const dy =
-    pointer.y -
-    dragState.startPointer.y;
-
-  dragState.ids.forEach(id => {
-    const node =
-      nodeById(id);
-
-    const original =
-      dragState.original.get(id);
-
-    if (!node || !original) {
-      return;
-    }
-
-    node.x =
-      Math.max(
-        0,
-        original.x + dx
-      );
-
-    node.y =
-      Math.max(
-        0,
-        original.y + dy
-      );
-  });
-
-  render();
-}
-
-/* =========================================================
-   RESIZING
-   ========================================================= */
-
-function startResize(event, node) {
-  event.stopPropagation();
+function startResize(event) {
 
   const handle =
     event.target.dataset.resize;
 
-  resizeState = {
-    id: node.id,
+  const el =
+    event.currentTarget.closest(
+      ".node"
+    );
+
+  if (!el) return;
+
+  const node =
+    nodeById(
+      el.dataset.id
+    );
+
+  if (!node) return;
+
+  const point =
+    canvasPoint(event);
+
+  pushHistory();
+
+  state.resizing = {
+
+    node,
 
     handle,
 
-    startPointer:
-      canvasPoint(
-        event.clientX,
-        event.clientY
-      ),
+    startX: point.x,
 
-    original: {
-      x: node.x,
-      y: node.y,
-      width: node.width,
-      height: node.height
-    }
+    startY: point.y,
+
+    x: node.x,
+
+    y: node.y,
+
+    width: node.width,
+
+    height: node.height
   };
-}
 
-function resizeSelectedNode(event) {
-  const node =
-    nodeById(
-      resizeState.id
-    );
-
-  if (!node) {
-    return;
-  }
-
-  const pointer =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  const dx =
-    pointer.x -
-    resizeState.startPointer.x;
-
-  const dy =
-    pointer.y -
-    resizeState.startPointer.y;
-
-  const original =
-    resizeState.original;
-
-  const minWidth = 45;
-
-  const minHeight = 35;
-
-  switch (
-    resizeState.handle
-  ) {
-    case 'se':
-      node.width =
-        Math.max(
-          minWidth,
-          original.width + dx
-        );
-
-      node.height =
-        Math.max(
-          minHeight,
-          original.height + dy
-        );
-
-      break;
-
-    case 'sw':
-      node.width =
-        Math.max(
-          minWidth,
-          original.width - dx
-        );
-
-      node.height =
-        Math.max(
-          minHeight,
-          original.height + dy
-        );
-
-      node.x =
-        original.x +
-        dx;
-
-      break;
-
-    case 'ne':
-      node.width =
-        Math.max(
-          minWidth,
-          original.width + dx
-        );
-
-      node.height =
-        Math.max(
-          minHeight,
-          original.height - dy
-        );
-
-      node.y =
-        original.y +
-        dy;
-
-      break;
-
-    case 'nw':
-      node.width =
-        Math.max(
-          minWidth,
-          original.width - dx
-        );
-
-      node.height =
-        Math.max(
-          minHeight,
-          original.height - dy
-        );
-
-      node.x =
-        original.x +
-        dx;
-
-      node.y =
-        original.y +
-        dy;
-
-      break;
-  }
-
-  render();
-}
-
-/* =========================================================
-   NODE SELECTION
-   ========================================================= */
-
-function selectNode(event) {
   event.stopPropagation();
 
-  const id =
-    event.currentTarget.dataset.id;
+  event.preventDefault();
+}
 
-  const multi =
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey;
+document.addEventListener(
+  "pointermove",
+  event => {
 
-  if (connectMode) {
-    handleConnectSelection(id);
+    if (!state.resizing) return;
 
-    return;
-  }
+    const r =
+      state.resizing;
 
-  if (multi) {
-    if (selectedIds.has(id)) {
-      selectedIds.delete(id);
-    } else {
-      selectedIds.add(id);
+    const p =
+      canvasPoint(event);
+
+    const dx =
+      p.x - r.startX;
+
+    const dy =
+      p.y - r.startY;
+
+    let x = r.x;
+    let y = r.y;
+
+    let width = r.width;
+    let height = r.height;
+
+    if (
+      r.handle.includes("e")
+    ) {
+      width =
+        Math.max(
+          60,
+          r.width + dx
+        );
     }
 
-    selectedId = id;
-  } else {
-    clearSelection();
+    if (
+      r.handle.includes("s")
+    ) {
+      height =
+        Math.max(
+          40,
+          r.height + dy
+        );
+    }
 
-    selectedIds.add(id);
+    if (
+      r.handle.includes("w")
+    ) {
 
-    selectedId = id;
-  }
+      width =
+        Math.max(
+          60,
+          r.width - dx
+        );
 
-  render();
+      x =
+        r.x + dx;
+    }
 
-  if (impactMode) {
-    showImpact(id);
-  }
-}
+    if (
+      r.handle.includes("n")
+    ) {
 
-function selectSingle(id) {
-  clearSelection();
+      height =
+        Math.max(
+          40,
+          r.height - dy
+        );
 
-  selectedIds.add(id);
+      y =
+        r.y + dy;
+    }
 
-  selectedId = id;
-}
+    r.node.x = snapValue(x);
+    r.node.y = snapValue(y);
 
-function clearSelection() {
-  selectedIds.clear();
-
-  selectedId = null;
-}
-
-function selectAll() {
-  selectedIds = new Set(
-    model.nodes.map(
-      node => node.id
-    )
-  );
-
-  selectedId =
-    model.nodes[0]?.id ||
-    null;
-
-  render();
-
-  setStatus(
-    `${selectedIds.size} item(s) selected.`
-  );
-}
-
-/* =========================================================
-   CONNECT MODE
-   ========================================================= */
-
-function handleConnectSelection(id) {
-  if (!connectSourceId) {
-    connectSourceId = id;
-
-    selectedId = id;
-
-    selectSingle(id);
-
-    setStatus(
-      'Now select the destination component.'
-    );
+    r.node.width = width;
+    r.node.height = height;
 
     render();
-
-    return;
   }
+);
 
-  if (
-    connectSourceId === id
-  ) {
-    return;
+document.addEventListener(
+  "pointerup",
+  () => {
+
+    if (state.resizing) {
+
+      state.resizing = null;
+
+      status("Resized");
+    }
   }
+);
 
-  const source =
-    nodeById(
-      connectSourceId
+/* ============================================================
+   CONNECTION PORT EVENTS
+   ============================================================ */
+
+document.addEventListener(
+  "pointerdown",
+  event => {
+
+    const port =
+      event.target.closest(
+        ".connection-port"
+      );
+
+    if (!port) return;
+
+    const nodeId =
+      port.dataset.nodeId;
+
+    const side =
+      port.dataset.port;
+
+    if (
+      state.tool !== "connect"
+    ) {
+
+      state.tool = "connect";
+
+      updateToolButtons();
+    }
+
+    if (!state.connectSource) {
+
+      state.connectSource = {
+        id: nodeId,
+        port: side
+      };
+
+      status(
+        "Drag to another connection point"
+      );
+
+      beginPortDrag(
+        event,
+        nodeId,
+        side
+      );
+    }
+
+    event.stopPropagation();
+  }
+);
+
+/* ============================================================
+   PORT DRAG CONNECTION
+   ============================================================ */
+
+function beginPortDrag(
+  event,
+  sourceId,
+  sourcePort
+) {
+
+  const points = [];
+
+  const start =
+    canvasPoint(event);
+
+  points.push(start);
+
+  const move = e => {
+
+    const p =
+      canvasPoint(e);
+
+    points.push(p);
+
+    drawTemporaryConnection(
+      points
+    );
+  };
+
+  const up = e => {
+
+    document.removeEventListener(
+      "pointermove",
+      move
     );
 
-  const target =
-    nodeById(id);
+    document.removeEventListener(
+      "pointerup",
+      up
+    );
 
-  if (!source || !target) {
-    return;
-  }
+    removeTemporaryConnection();
 
-  const label =
-    safeElement(
-      'edgeLabel'
-    )?.value.trim() ||
-    '';
+    const target =
+      document.elementFromPoint(
+        e.clientX,
+        e.clientY
+      );
+
+    const port =
+      target?.closest(
+        ".connection-port"
+      );
+
+    if (port) {
+
+      const targetId =
+        port.dataset.nodeId;
+
+      const targetPort =
+        port.dataset.port;
+
+      if (
+        targetId &&
+        targetId !== sourceId
+      ) {
+
+        createEdge(
+          sourceId,
+          targetId,
+          sourcePort,
+          targetPort
+        );
+      }
+    }
+
+    state.connectSource = null;
+  };
+
+  document.addEventListener(
+    "pointermove",
+    move
+  );
+
+  document.addEventListener(
+    "pointerup",
+    up
+  );
+}
+
+function drawTemporaryConnection(
+  points
+) {
+
+  removeTemporaryConnection();
+
+  if (!edgesSvg) return;
+
+  const path =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+
+  path.id =
+    "temporary-connection";
+
+  path.classList.add(
+    "edge",
+    "highlight"
+  );
+
+  path.setAttribute(
+    "d",
+    freePath(points)
+  );
+
+  edgesSvg.appendChild(path);
+}
+
+function removeTemporaryConnection() {
+
+  document
+    .getElementById(
+      "temporary-connection"
+    )
+    ?.remove();
+}
+
+/* ============================================================
+   CREATE EDGE
+   ============================================================ */
+
+function createEdge(
+  from,
+  to,
+  fromPort = null,
+  toPort = null
+) {
+
+  pushHistory();
 
   const edge = {
-    id: uid('edge'),
 
-    from: source.id,
+    id: uid("edge"),
 
-    to: target.id,
+    from,
+    to,
 
-    label,
+    fromPort,
+    toPort,
 
-    type: currentEdgeType,
+    type:
+      state.connectorType,
 
-    style: currentEdgeStyle,
+    style:
+      state.connectorStyle,
 
-    arrowStart:
-      currentArrowStart,
+    arrow: true,
 
-    arrowEnd:
-      currentArrowEnd,
-
-    fromPort:
-      chooseBestPort(
-        source,
-        {
-          x:
-            target.x +
-            target.width / 2,
-
-          y:
-            target.y +
-            target.height / 2
-        }
-      ),
-
-    toPort:
-      chooseBestPort(
-        target,
-        {
-          x:
-            source.x +
-            source.width / 2,
-
-          y:
-            source.y +
-            source.height / 2
-        }
-      )
+    label: ""
   };
 
-  const exists =
-    model.edges.some(
-      e =>
-        e.from === edge.from &&
-        e.to === edge.to
-    );
+  state.edges.push(edge);
 
-  if (!exists) {
-    model.edges.push(edge);
+  state.selected.clear();
 
-    setStatus(
-      'Connection created.'
-    );
-  } else {
-    setStatus(
-      'That connection already exists.'
-    );
-  }
-
-  connectSourceId = null;
+  state.selected.add(edge.id);
 
   render();
+
+  status(
+    `${state.connectorType} connector created`
+  );
 }
 
-/* =========================================================
-   IMPACT ANALYSIS
-   ========================================================= */
+/* ============================================================
+   FREE-FORM / WAVY DRAWING
+   ============================================================ */
 
-function downstream(start) {
-  const found =
-    new Set();
-
-  const queue = [start];
-
-  while (queue.length) {
-    const source =
-      queue.shift();
-
-    model.edges
-      .filter(
-        edge =>
-          edge.from === source
-      )
-      .forEach(edge => {
-        if (!found.has(edge.to)) {
-          found.add(edge.to);
-
-          queue.push(edge.to);
-        }
-      });
-  }
-
-  return found;
-}
-
-function showImpact(id) {
-  const container =
-    $('impactResults');
-
-  if (!container) {
-    return;
-  }
-
-  const impacts =
-    [...downstream(id)]
-      .map(nodeById)
-      .filter(Boolean);
-
-  container.innerHTML =
-    impacts.length
-      ? impacts
-          .map(
-            node =>
-              `<div class="finding">
-                <strong>
-                  ${escapeHtml(node.label)}
-                </strong>
-                <br>
-                ${escapeHtml(
-                  typeName(node.type)
-                )}
-                is downstream.
-              </div>`
-          )
-          .join('')
-      : `
-        <div class="finding ok">
-          No downstream dependencies are mapped.
-        </div>
-      `;
-}
-
-/* =========================================================
-   INSPECTOR
-   ========================================================= */
-
-function renderInspector() {
-  const node =
-    nodeById(
-      selectedId
-    );
-
-  const inspector =
-    $('inspector');
-
-  const empty =
-    $('inspectorEmpty');
-
-  if (!inspector || !empty) {
-    return;
-  }
-
-  inspector.hidden =
-    !node;
-
-  empty.hidden =
-    Boolean(node);
-
-  if (!node) {
-    return;
-  }
-
-  const fields = {
-    nodeLabel: node.label,
-    nodeEnvironment:
-      node.environment,
-    nodeOwner:
-      node.owner,
-    nodeDescription:
-      node.description
-  };
-
-  Object.entries(fields)
-    .forEach(
-      ([id, value]) => {
-        const element =
-          $(id);
-
-        if (element) {
-          element.value =
-            value || '';
-        }
-      }
-    );
-
-  const type =
-    $('nodeType');
-
-  if (type) {
-    type.value =
-      typeName(node.type);
-  }
-
-  if (impactMode) {
-    showImpact(node.id);
-  }
-}
-
-/* =========================================================
-   INSPECTOR UPDATE
-   ========================================================= */
-
-function updateSelected() {
-  const node =
-    nodeById(
-      selectedId
-    );
-
-  if (!node) {
-    return;
-  }
-
-  node.label =
-    $('nodeLabel')?.value ||
-    node.label;
-
-  node.environment =
-    $('nodeEnvironment')?.value ||
-    node.environment;
-
-  node.owner =
-    $('nodeOwner')?.value ||
-    '';
-
-  node.description =
-    $('nodeDescription')?.value ||
-    '';
-
-  render();
-}
-
-[
-  'nodeLabel',
-  'nodeEnvironment',
-  'nodeOwner',
-  'nodeDescription'
-].forEach(id => {
-  const element =
-    $(id);
-
-  if (element) {
-    element.addEventListener(
-      'input',
-      updateSelected
-    );
-  }
-});
-
-/* =========================================================
-   DOUBLE CLICK LABEL EDIT
-   ========================================================= */
-
-function editNodeLabel(event) {
-  event.stopPropagation();
-
-  const node =
-    nodeById(
-      event.currentTarget.dataset.id
-    );
-
-  if (!node) {
-    return;
-  }
-
-  const label =
-    prompt(
-      'Component name:',
-      node.label
-    );
+function beginDrawing(event) {
 
   if (
-    label !== null &&
-    label.trim()
+    state.tool !== "freeform" &&
+    state.tool !== "wavy"
   ) {
-    node.label =
-      label.trim();
+    return;
+  }
+
+  const point =
+    canvasPoint(event);
+
+  state.drawing = {
+
+    type:
+      state.tool,
+
+    points: [
+      point
+    ]
+  };
+
+  drawTemporaryConnection(
+    state.drawing.points
+  );
+
+  event.preventDefault();
+}
+
+document.addEventListener(
+  "pointermove",
+  event => {
+
+    if (!state.drawing) return;
+
+    const point =
+      canvasPoint(event);
+
+    state.drawing.points.push(
+      point
+    );
+
+    drawTemporaryConnection(
+      state.drawing.points
+    );
+  }
+);
+
+document.addEventListener(
+  "pointerup",
+  () => {
+
+    if (!state.drawing) return;
+
+    const drawing =
+      state.drawing;
+
+    state.drawing = null;
+
+    removeTemporaryConnection();
+
+    if (
+      drawing.points.length < 3
+    ) {
+      return;
+    }
+
+    pushHistory();
+
+    state.edges.push({
+
+      id: uid("edge"),
+
+      freeform: true,
+
+      points:
+        drawing.points,
+
+      type:
+        drawing.type,
+
+      style:
+        state.connectorStyle,
+
+      arrow: true,
+
+      label: ""
+    });
 
     render();
 
-    setStatus(
-      'Component renamed.'
+    status(
+      `${drawing.type} arrow created`
     );
   }
-}
+);
 
-/* =========================================================
-   VALIDATION
-   ========================================================= */
+/* ============================================================
+   STICKY NOTES
+   ============================================================ */
 
-function validate() {
-  const findings = [];
+function renderStickyNotes() {
 
-  const connected =
-    (
-      id,
-      type
-    ) =>
-      model.edges.some(
-        edge =>
-          edge.from === id &&
-          nodeById(edge.to)
-            ?.type === type
-      ) ||
-      model.edges.some(
-        edge =>
-          edge.to === id &&
-          nodeById(edge.from)
-            ?.type === type
+  document
+    .querySelectorAll(
+      ".sticky-note"
+    )
+    .forEach(el => el.remove());
+
+  state.stickyNotes.forEach(note => {
+
+    const el =
+      document.createElement(
+        "div"
       );
 
-  model.nodes.forEach(node => {
-    if (
-      [
-        'app',
-        'api',
-        'vm',
-        'aks',
-        'microservice',
-        'container'
-      ].includes(node.type) &&
-      !connected(
-        node.id,
-        'monitoring'
-      )
-    ) {
-      findings.push({
-        level: 'warning',
+    el.className =
+      "sticky-note";
 
-        text:
-          `${node.label}: no monitoring component is connected.`
-      });
-    }
+    el.style.left =
+      `${note.x}px`;
 
-    if (
-      [
-        'database',
-        'sql',
-        'nosql'
-      ].includes(node.type) &&
-      !model.edges.some(
-        edge =>
-          edge.from === node.id &&
-          [
-            'storage',
-            'backup',
-            'cloud'
-          ].includes(
-            nodeById(
-              edge.to
-            )?.type
-          )
-      )
-    ) {
-      findings.push({
-        level: 'warning',
+    el.style.top =
+      `${note.y}px`;
 
-        text:
-          `${node.label}: no backup/storage dependency is mapped.`
-      });
-    }
+    el.dataset.id =
+      note.id;
 
-    if (
-      [
-        'app',
-        'api',
-        'vm'
-      ].includes(node.type) &&
-      node.environment ===
-        'External' &&
-      !connected(
-        node.id,
-        'identity'
-      )
-    ) {
-      findings.push({
-        level: 'critical',
+    el.innerHTML = `
+      <textarea>${note.text || "Double-click to edit"}</textarea>
+    `;
 
-        text:
-          `${node.label}: external-facing workload has no identity/security boundary mapped.`
-      });
-    }
-  });
+    const textarea =
+      el.querySelector(
+        "textarea"
+      );
 
-  const container =
-    $('validationResults');
+    textarea.addEventListener(
+      "input",
+      () => {
 
-  if (container) {
-    container.innerHTML =
-      findings.length
-        ? findings
-            .map(
-              finding =>
-                `<div class="finding ${finding.level}">
-                  ${escapeHtml(
-                    finding.text
-                  )}
-                </div>`
-            )
-            .join('')
-        : `
-          <div class="finding ok">
-            No checks failed. Review the diagram manually before implementation.
-          </div>
-        `;
-  }
-
-  setStatus(
-    `Validation complete: ${findings.length} potential gap(s).`
-  );
-}
-
-/* =========================================================
-   AUTO LAYOUT
-   ========================================================= */
-
-function autoLayout() {
-  const regular =
-    model.nodes.filter(
-      node =>
-        node.type !== 'zone'
+        note.text =
+          textarea.value;
+      }
     );
 
-  const columns = 4;
+    el.addEventListener(
+      "pointerdown",
+      event => {
 
-  regular.forEach(
-    (node, index) => {
-      node.x =
-        50 +
-        (index % columns) *
-          210;
+        if (
+          event.target === textarea
+        ) {
+          return;
+        }
 
-      node.y =
-        70 +
-        Math.floor(
-          index / columns
-        ) *
-          145;
-    }
-  );
+        selectOnly(
+          note.id
+        );
+      }
+    );
 
-  render();
-
-  setStatus(
-    'Components arranged in a simple grid.'
-  );
+    canvasInner?.appendChild(
+      el
+    );
+  });
 }
 
-/* =========================================================
-   TEMPLATES
-   ========================================================= */
+function addStickyNote(x, y) {
 
-function template(name) {
-  model = {
-    name:
-      name === 'aiops'
-        ? 'AIOps Control Center'
-        : name === 'aks'
-          ? 'AKS Application Platform'
-          : 'Azure Landing Zone',
+  pushHistory();
 
-    version: '1.0',
+  state.stickyNotes.push({
 
-    nodes: [],
+    id: uid("sticky"),
 
-    edges: [],
-
-    comments: [],
-
-    pins: [],
-
-    stickyNotes: [],
-
-    drawings: []
-  };
-
-  const add = (
-    type,
     x,
     y,
-    label,
-    environment = 'Production'
-  ) =>
-    createNode(
-      type,
-      x,
-      y,
-      {
-        label,
-        environment
-      }
-    );
 
-  if (name === 'aiops') {
-    const internet =
-      add(
-        'internet',
-        35,
-        220,
-        'Monitoring sources',
-        'External'
-      );
-
-    const monitor =
-      add(
-        'monitoring',
-        220,
-        110,
-        'Azure Monitor'
-      );
-
-    const serviceNow =
-      add(
-        'servicenow',
-        220,
-        330,
-        'ServiceNow ITSM'
-      );
-
-    const app =
-      add(
-        'app',
-        450,
-        215,
-        'AIOps Control Center'
-      );
-
-    const database =
-      add(
-        'database',
-        670,
-        120,
-        'Incident store'
-      );
-
-    const aks =
-      add(
-        'aks',
-        670,
-        330,
-        'AKS agents'
-      );
-
-    const zone =
-      add(
-        'zone',
-        400,
-        55,
-        'Azure production zone'
-      );
-
-    addEdges([
-      [
-        internet,
-        monitor,
-        'Alerts'
-      ],
-      [
-        internet,
-        serviceNow,
-        'Incidents'
-      ],
-      [
-        monitor,
-        app,
-        'Events'
-      ],
-      [
-        serviceNow,
-        app,
-        'REST / OAuth 2.0'
-      ],
-      [
-        app,
-        database,
-        'Store'
-      ],
-      [
-        app,
-        aks,
-        'Runbooks'
-      ]
-    ]);
-  }
-
-  else if (name === 'aks') {
-    const users =
-      add(
-        'internet',
-        25,
-        215,
-        'Users',
-        'External'
-      );
-
-    const gateway =
-      add(
-        'api',
-        210,
-        210,
-        'Application Gateway'
-      );
-
-    const aks =
-      add(
-        'aks',
-        425,
-        210,
-        'AKS cluster'
-      );
-
-    const app =
-      add(
-        'app',
-        635,
-        130,
-        'Orders API'
-      );
-
-    const database =
-      add(
-        'database',
-        635,
-        320,
-        'PostgreSQL'
-      );
-
-    const monitor =
-      add(
-        'monitoring',
-        425,
-        420,
-        'Azure Monitor'
-      );
-
-    add(
-      'zone',
-      370,
-      55,
-      'Azure workload zone'
-    );
-
-    addEdges([
-      [
-        users,
-        gateway,
-        'HTTPS'
-      ],
-      [
-        gateway,
-        aks,
-        'Ingress'
-      ],
-      [
-        aks,
-        app,
-        'Service'
-      ],
-      [
-        app,
-        database,
-        'TLS'
-      ],
-      [
-        aks,
-        monitor,
-        'Metrics'
-      ],
-      [
-        database,
-        monitor,
-        'Backup status'
-      ]
-    ]);
-  }
-
-  else {
-    const identity =
-      add(
-        'identity',
-        45,
-        100,
-        'Microsoft Entra ID'
-      );
-
-    const firewall =
-      add(
-        'firewall',
-        260,
-        100,
-        'Azure Firewall'
-      );
-
-    const app =
-      add(
-        'app',
-        490,
-        100,
-        'Shared services'
-      );
-
-    const storage =
-      add(
-        'storage',
-        710,
-        100,
-        'Storage account'
-      );
-
-    const monitor =
-      add(
-        'monitoring',
-        490,
-        320,
-        'Log Analytics'
-      );
-
-    add(
-      'zone',
-      220,
-      40,
-      'Hub network'
-    );
-
-    addEdges([
-      [
-        identity,
-        app,
-        'OAuth'
-      ],
-      [
-        firewall,
-        app,
-        'Inspect'
-      ],
-      [
-        app,
-        storage,
-        'Private endpoint'
-      ],
-      [
-        app,
-        monitor,
-        'Logs'
-      ]
-    ]);
-  }
-
-  clearSelection();
+    text:
+      "Double-click to edit"
+  });
 
   render();
 
-  setStatus(
-    `${model.name} template loaded.`
-  );
+  status("Sticky note added");
 }
 
-function addEdges(list) {
-  list.forEach(
-    ([from, to, label]) => {
-      model.edges.push({
-        id: uid('edge'),
+/* ============================================================
+   COMMENTS
+   ============================================================ */
 
-        from: from.id,
+function renderComments() {
 
-        to: to.id,
-
-        label,
-
-        type: 'straight',
-
-        style: 'solid',
-
-        arrowStart: false,
-
-        arrowEnd: true
-      });
-    }
-  );
-}
-
-/* =========================================================
-   NEW DIAGRAM
-   ========================================================= */
-
-function newDiagram() {
-  if (
-    !confirm(
-      'Start a new blank diagram?'
+  document
+    .querySelectorAll(
+      ".comment-node"
     )
-  ) {
-    return;
-  }
+    .forEach(el => el.remove());
 
-  model = {
-    name:
-      'Untitled architecture',
+  state.comments.forEach(comment => {
 
-    version: '1.0',
-
-    nodes: [],
-
-    edges: [],
-
-    comments: [],
-
-    pins: [],
-
-    stickyNotes: [],
-
-    drawings: []
-  };
-
-  clearSelection();
-
-  render();
-
-  setStatus(
-    'New blank diagram created.'
-  );
-}
-
-/* =========================================================
-   SERIALIZATION
-   ========================================================= */
-
-function exportData() {
-  ensureModel();
-
-  return JSON.stringify(
-    {
-      ...model,
-
-      metadata: {
-        application:
-          'Architecture Diagram Builder',
-
-        version: '1.0',
-
-        exportedAt:
-          new Date().toISOString()
-      }
-    },
-    null,
-    2
-  );
-}
-
-/* =========================================================
-   DOWNLOAD
-   ========================================================= */
-
-function download(
-  blob,
-  filename
-) {
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-  const anchor =
-    document.createElement(
-      'a'
-    );
-
-  anchor.href = url;
-
-  anchor.download =
-    filename;
-
-  document.body.appendChild(
-    anchor
-  );
-
-  anchor.click();
-
-  anchor.remove();
-
-  setTimeout(
-    () =>
-      URL.revokeObjectURL(
-        url
-      ),
-    1000
-  );
-}
-
-/* =========================================================
-   .ARCH FILE
-   ========================================================= */
-
-function saveArchFile() {
-  const blob =
-    new Blob(
-      [
-        exportData()
-      ],
-      {
-        type:
-          'application/x-architecture'
-      }
-    );
-
-  const filename =
-    `${sanitizeFilename(
-      model.name ||
-        'architecture'
-    )}.arch`;
-
-  download(
-    blob,
-    filename
-  );
-
-  setStatus(
-    `${filename} saved.`
-  );
-}
-
-function sanitizeFilename(name) {
-  return String(name)
-    .trim()
-    .replace(
-      /[<>:"/\\|?*]+/g,
-      '-'
-    )
-    .replace(
-      /\s+/g,
-      '-'
-    )
-    .slice(
-      0,
-      100
-    ) ||
-    'architecture';
-}
-
-/* =========================================================
-   LOCAL STORAGE
-   ========================================================= */
-
-function saveLocally() {
-  try {
-    localStorage.setItem(
-      'coffee-break-architecture',
-      exportData()
-    );
-
-    setStatus(
-      'Diagram saved in this browser.'
-    );
-  } catch (error) {
-    setStatus(
-      `Local save failed: ${error.message}`
-    );
-  }
-}
-
-function loadLocally() {
-  const saved =
-    localStorage.getItem(
-      'coffee-break-architecture'
-    );
-
-  if (!saved) {
-    setStatus(
-      'No locally saved diagram found.'
-    );
-
-    return;
-  }
-
-  try {
-    model =
-      JSON.parse(saved);
-
-    ensureModel();
-
-    clearSelection();
-
-    render();
-
-    setStatus(
-      'Local diagram loaded.'
-    );
-  } catch (error) {
-    setStatus(
-      `Load failed: ${error.message}`
-    );
-  }
-}
-
-/* =========================================================
-   IMPORT .ARCH / JSON
-   ========================================================= */
-
-async function importDiagramFile(
-  file
-) {
-  if (!file) {
-    return;
-  }
-
-  try {
-    const text =
-      await file.text();
-
-    const parsed =
-      JSON.parse(text);
-
-    if (
-      !Array.isArray(
-        parsed.nodes
-      ) ||
-      !Array.isArray(
-        parsed.edges
-      )
-    ) {
-      throw new Error(
-        'Invalid architecture file.'
+    const el =
+      document.createElement(
+        "div"
       );
-    }
 
-    model = {
-      name:
-        parsed.name ||
-        'Imported architecture',
+    el.className =
+      "comment-node";
 
-      version:
-        parsed.version ||
-        '1.0',
+    el.style.left =
+      `${comment.x}px`;
 
-      nodes:
-        parsed.nodes || [],
+    el.style.top =
+      `${comment.y}px`;
 
-      edges:
-        parsed.edges || [],
+    el.dataset.id =
+      comment.id;
 
-      comments:
-        parsed.comments || [],
+    el.innerHTML = `
+      <div class="comment-author">
+        ${comment.author || "You"}
+      </div>
 
-      pins:
-        parsed.pins || [],
+      <div>
+        ${comment.text || "Comment"}
+      </div>
+    `;
 
-      stickyNotes:
-        parsed.stickyNotes || [],
+    el.addEventListener(
+      "dblclick",
+      () => {
 
-      drawings:
-        parsed.drawings || []
-    };
-
-    ensureModel();
-
-    clearSelection();
-
-    render();
-
-    setStatus(
-      'Architecture file imported successfully.'
-    );
-  } catch (error) {
-    setStatus(
-      `Import failed: ${error.message}`
-    );
-  }
-}
-
-/* =========================================================
-   IMAGE HANDLING
-   ========================================================= */
-
-function fileToDataUrl(file) {
-  return new Promise(
-    (resolve, reject) => {
-      const reader =
-        new FileReader();
-
-      reader.onload =
-        () =>
-          resolve(
-            reader.result
+        const text =
+          prompt(
+            "Comment:",
+            comment.text || ""
           );
 
-      reader.onerror =
-        reject;
+        if (
+          text !== null
+        ) {
 
-      reader.readAsDataURL(
-        file
+          pushHistory();
+
+          comment.text =
+            text;
+
+          render();
+        }
+      }
+    );
+
+    canvasInner?.appendChild(
+      el
+    );
+  });
+}
+
+function addComment(x, y) {
+
+  const text =
+    prompt(
+      "Enter comment:"
+    );
+
+  if (
+    text === null
+  ) {
+    return;
+  }
+
+  pushHistory();
+
+  state.comments.push({
+
+    id: uid("comment"),
+
+    x,
+    y,
+
+    author: "You",
+
+    text
+  });
+
+  render();
+
+  status("Comment added");
+}
+
+/* ============================================================
+   PINS
+   ============================================================ */
+
+function renderPins() {
+
+  document
+    .querySelectorAll(
+      ".pin-node"
+    )
+    .forEach(el => el.remove());
+
+  state.pins.forEach(pin => {
+
+    const el =
+      document.createElement(
+        "div"
       );
-    }
+
+    el.className =
+      "pin-node";
+
+    el.style.left =
+      `${pin.x}px`;
+
+    el.style.top =
+      `${pin.y}px`;
+
+    el.textContent =
+      "📌";
+
+    canvasInner?.appendChild(
+      el
+    );
+  });
+}
+
+function addPin(x, y) {
+
+  pushHistory();
+
+  state.pins.push({
+
+    id: uid("pin"),
+
+    x,
+    y
+  });
+
+  render();
+
+  status("Pin added");
+}
+
+/* ============================================================
+   TOOLS
+   ============================================================ */
+
+function activateTool(tool) {
+
+  state.tool =
+    tool;
+
+  state.connectSource =
+    null;
+
+  updateToolButtons();
+
+  status(
+    `${tool} tool`
   );
 }
 
-async function insertImageFile(
-  file,
-  x,
-  y
-) {
-  if (
-    !file ||
-    !file.type.startsWith(
-      'image/'
+function updateToolButtons() {
+
+  document
+    .querySelectorAll(
+      "[data-tool]"
     )
-  ) {
-    return;
-  }
+    .forEach(button => {
 
-  try {
-    const dataUrl =
-      await fileToDataUrl(
-        file
+      button.classList.toggle(
+        "active",
+        button.dataset.tool ===
+          state.tool
       );
-
-    const image =
-      new Image();
-
-    image.onload = () => {
-      const maxWidth = 300;
-
-      const scale =
-        image.width >
-        maxWidth
-          ? maxWidth /
-            image.width
-          : 1;
-
-      const width =
-        Math.max(
-          50,
-          image.width * scale
-        );
-
-      const height =
-        Math.max(
-          50,
-          image.height * scale
-        );
-
-      const node =
-        createNode(
-          'image',
-          x,
-          y,
-          {
-            label:
-              file.name ||
-              'Image',
-
-            width,
-
-            height,
-
-            image:
-              dataUrl,
-
-            imageName:
-              file.name,
-
-            imageMime:
-              file.type,
-
-            shape:
-              'rounded'
-          }
-        );
-
-      clearSelection();
-
-      selectSingle(
-        node.id
-      );
-
-      render();
-
-      setStatus(
-        `${file.name || 'Image'} inserted as a connectable node.`
-      );
-    };
-
-    image.src =
-      dataUrl;
-  } catch (error) {
-    setStatus(
-      `Image import failed: ${error.message}`
-    );
-  }
+    });
 }
 
-/* =========================================================
-   CLIPBOARD IMAGE PASTE
-   ========================================================= */
+/* ============================================================
+   TOOLBAR EVENTS
+   ============================================================ */
 
-async function handleClipboardPaste(
-  event
-) {
-  const items =
-    event.clipboardData?.items;
+document.addEventListener(
+  "click",
+  event => {
 
-  if (!items) {
-    return;
-  }
+    const tool =
+      event.target.closest(
+        "[data-tool]"
+      );
 
-  for (
-    const item of items
-  ) {
-    if (
-      item.type.startsWith(
-        'image/'
-      )
-    ) {
-      event.preventDefault();
+    if (tool) {
 
-      const file =
-        item.getAsFile();
+      activateTool(
+        tool.dataset.tool
+      );
 
-      if (!file) {
-        return;
-      }
+      return;
+    }
 
-      const center =
-        canvasPoint(
-          canvas.clientWidth /
-            2 +
-            canvas.getBoundingClientRect()
-              .left,
+    const connector =
+      event.target.closest(
+        "[data-connector]"
+      );
 
-          canvas.clientHeight /
-            2 +
-            canvas.getBoundingClientRect()
-              .top
+    if (connector) {
+
+      state.connectorType =
+        connector.dataset.connector;
+
+      if (
+        state.connectorType ===
+        "free-form"
+      ) {
+
+        activateTool(
+          "freeform"
         );
 
-      await insertImageFile(
-        file,
-        center.x - 100,
-        center.y - 75
+      } else if (
+        state.connectorType ===
+        "wavy"
+      ) {
+
+        activateTool(
+          "wavy"
+        );
+
+      } else {
+
+        activateTool(
+          "connect"
+        );
+      }
+
+      status(
+        `${state.connectorType} connector selected`
+      );
+
+      return;
+    }
+
+    const style =
+      event.target.closest(
+        "[data-edge-style]"
+      );
+
+    if (style) {
+
+      state.connectorStyle =
+        style.dataset.edgeStyle;
+
+      status(
+        `${state.connectorStyle} connector style`
       );
 
       return;
     }
   }
+);
+
+/* ============================================================
+   CANVAS CLICK
+   ============================================================ */
+
+canvas?.addEventListener(
+  "pointerdown",
+  event => {
+
+    if (
+      event.target.closest(
+        ".node"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        ".sticky-note"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        ".comment-node"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        ".pin-node"
+      )
+    ) {
+      return;
+    }
+
+    const point =
+      canvasPoint(event);
+
+    switch (state.tool) {
+
+      case "sticky":
+
+        addStickyNote(
+          point.x,
+          point.y
+        );
+
+        return;
+
+      case "comment":
+
+        addComment(
+          point.x,
+          point.y
+        );
+
+        return;
+
+      case "pin":
+
+        addPin(
+          point.x,
+          point.y
+        );
+
+        return;
+
+      case "freeform":
+      case "wavy":
+
+        beginDrawing(event);
+
+        return;
+
+      case "select":
+
+        clearSelection();
+
+        render();
+
+        break;
+
+      case "pan":
+
+        beginPan(event);
+
+        break;
+    }
+  }
+);
+
+/* ============================================================
+   PAN
+   ============================================================ */
+
+let panState = null;
+
+function beginPan(event) {
+
+  panState = {
+
+    x: event.clientX,
+
+    y: event.clientY,
+
+    scrollLeft:
+      canvas.scrollLeft,
+
+    scrollTop:
+      canvas.scrollTop
+  };
+
+  canvas.style.cursor =
+    "grabbing";
 }
 
-/* =========================================================
-   COPY / PASTE ITEMS
-   ========================================================= */
+document.addEventListener(
+  "pointermove",
+  event => {
 
-function copySelection() {
+    if (!panState) return;
+
+    canvas.scrollLeft =
+      panState.scrollLeft -
+      (
+        event.clientX -
+        panState.x
+      );
+
+    canvas.scrollTop =
+      panState.scrollTop -
+      (
+        event.clientY -
+        panState.y
+      );
+  }
+);
+
+document.addEventListener(
+  "pointerup",
+  () => {
+
+    if (panState) {
+
+      panState = null;
+
+      canvas.style.cursor =
+        "";
+    }
+  }
+);
+
+/* ============================================================
+   PALETTE DRAG/DROP
+   ============================================================ */
+
+document.addEventListener(
+  "dragstart",
+  event => {
+
+    const item =
+      event.target.closest(
+        ".palette-item"
+      );
+
+    if (!item) return;
+
+    event.dataTransfer.effectAllowed =
+      "copy";
+
+    event.dataTransfer.setData(
+      "application/x-component",
+      item.dataset.type
+    );
+  }
+);
+
+canvas?.addEventListener(
+  "dragover",
+  event => {
+
+    event.preventDefault();
+
+    canvas.classList.add(
+      "drop-target"
+    );
+  }
+);
+
+canvas?.addEventListener(
+  "dragleave",
+  () => {
+
+    canvas.classList.remove(
+      "drop-target"
+    );
+  }
+);
+
+canvas?.addEventListener(
+  "drop",
+  event => {
+
+    event.preventDefault();
+
+    canvas.classList.remove(
+      "drop-target"
+    );
+
+    const type =
+      event.dataTransfer.getData(
+        "application/x-component"
+      );
+
+    if (type) {
+
+      const point =
+        canvasPoint(event);
+
+      addNode(
+        type,
+        point.x,
+        point.y
+      );
+
+      return;
+    }
+
+    const files =
+      [...event.dataTransfer.files];
+
+    const image =
+      files.find(
+        file =>
+          file.type.startsWith(
+            "image/"
+          )
+      );
+
+    if (image) {
+
+      const point =
+        canvasPoint(event);
+
+      addImage(
+        image,
+        point.x,
+        point.y
+      );
+    }
+  }
+);
+
+/* ============================================================
+   CLICK PALETTE
+   ============================================================ */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const item =
+      event.target.closest(
+        ".palette-item"
+      );
+
+    if (!item) return;
+
+    if (
+      state.tool !== "select"
+    ) {
+      activateTool(
+        "select"
+      );
+    }
+
+    const rect =
+      canvas.getBoundingClientRect();
+
+    const x =
+      (
+        canvas.scrollLeft +
+        rect.width / 2
+      ) / state.zoom;
+
+    const y =
+      (
+        canvas.scrollTop +
+        rect.height / 2
+      ) / state.zoom;
+
+    addNode(
+      item.dataset.type,
+      x - 75,
+      y - 38
+    );
+  }
+);
+
+/* ============================================================
+   IMAGE INSERT
+   ============================================================ */
+
+function openImagePicker() {
+
+  const input =
+    document.createElement(
+      "input"
+    );
+
+  input.type =
+    "file";
+
+  input.accept =
+    "image/*";
+
+  input.onchange =
+    () => {
+
+      const file =
+        input.files?.[0];
+
+      if (!file) return;
+
+      const rect =
+        canvas.getBoundingClientRect();
+
+      addImage(
+        file,
+        (
+          canvas.scrollLeft +
+          rect.width / 2
+        ) / state.zoom - 110,
+        (
+          canvas.scrollTop +
+          rect.height / 2
+        ) / state.zoom - 75
+      );
+    };
+
+  input.click();
+}
+
+/* ============================================================
+   CLIPBOARD IMAGE PASTE
+   ============================================================ */
+
+document.addEventListener(
+  "paste",
+  event => {
+
+    const items =
+      [...(
+        event.clipboardData?.items ||
+        []
+      )];
+
+    const imageItem =
+      items.find(
+        item =>
+          item.type.startsWith(
+            "image/"
+          )
+      );
+
+    if (!imageItem) return;
+
+    const file =
+      imageItem.getAsFile();
+
+    if (!file) return;
+
+    const rect =
+      canvas.getBoundingClientRect();
+
+    addImage(
+      file,
+      (
+        canvas.scrollLeft +
+        rect.width / 2
+      ) / state.zoom - 110,
+      (
+        canvas.scrollTop +
+        rect.height / 2
+      ) / state.zoom - 75
+    );
+
+    status(
+      "Image pasted from clipboard"
+    );
+  }
+);
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    const target =
+      event.target;
+
+    const editing =
+      target.matches(
+        "input, textarea, select"
+      );
+
+    if (
+      editing &&
+      event.key !== "Escape"
+    ) {
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() === "z"
+    ) {
+
+      event.preventDefault();
+
+      undo();
+
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() === "y"
+    ) {
+
+      event.preventDefault();
+
+      redo();
+
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() === "c"
+    ) {
+
+      copySelection();
+
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() === "v"
+    ) {
+
+      pasteSelection();
+
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() === "d"
+    ) {
+
+      event.preventDefault();
+
+      duplicateSelection();
+
+      return;
+    }
+
+    if (
+      event.key === "Delete" ||
+      event.key === "Backspace"
+    ) {
+
+      deleteSelection();
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+
+      state.tool =
+        "select";
+
+      state.connectSource =
+        null;
+
+      state.drawing =
+        null;
+
+      removeTemporaryConnection();
+
+      updateToolButtons();
+
+      return;
+    }
+
+    switch (
+      event.key.toLowerCase()
+    ) {
+
+      case "v":
+        activateTool("select");
+        break;
+
+      case "h":
+        activateTool("pan");
+        break;
+
+      case "t":
+        activateTool("text");
+        break;
+
+      case "s":
+        activateTool("sticky");
+        break;
+
+      case "c":
+        activateTool("comment");
+        break;
+
+      case "p":
+        activateTool("pin");
+        break;
+    }
+
+    if (
+      event.key === "ArrowUp"
+    ) {
+      moveSelection(
+        0,
+        event.shiftKey ? -10 : -1
+      );
+    }
+
+    if (
+      event.key === "ArrowDown"
+    ) {
+      moveSelection(
+        0,
+        event.shiftKey ? 10 : 1
+      );
+    }
+
+    if (
+      event.key === "ArrowLeft"
+    ) {
+      moveSelection(
+        event.shiftKey ? -10 : -1,
+        0
+      );
+    }
+
+    if (
+      event.key === "ArrowRight"
+    ) {
+      moveSelection(
+        event.shiftKey ? 10 : 1,
+        0
+      );
+    }
+  }
+);
+
+/* ============================================================
+   MOVE SELECTION
+   ============================================================ */
+
+function moveSelection(dx, dy) {
+
   const nodes =
-    model.nodes.filter(
+    selectedNodes();
+
+  if (!nodes.length) return;
+
+  pushHistory();
+
+  nodes.forEach(node => {
+
+    node.x += dx;
+    node.y += dy;
+  });
+
+  render();
+}
+
+/* ============================================================
+   DELETE
+   ============================================================ */
+
+function deleteSelection() {
+
+  if (!state.selected.size) {
+    return;
+  }
+
+  pushHistory();
+
+  state.nodes =
+    state.nodes.filter(
       node =>
-        selectedIds.has(
+        !state.selected.has(
           node.id
         )
     );
 
-  const edges =
-    model.edges.filter(
+  state.edges =
+    state.edges.filter(
       edge =>
-        selectedIds.has(
-          edge.from
+        !state.selected.has(
+          edge.id
         ) &&
-        selectedIds.has(
-          edge.to
+        !(
+          state.selected.has(
+            edge.from
+          ) ||
+          state.selected.has(
+            edge.to
+          )
         )
     );
 
-  if (
-    !nodes.length &&
-    !edges.length
-  ) {
-    return;
-  }
+  state.selected.clear();
 
-  clipboardData = {
-    nodes:
-      JSON.parse(
-        JSON.stringify(
-          nodes
-        )
-      ),
+  render();
 
-    edges:
-      JSON.parse(
-        JSON.stringify(
-          edges
-        )
-      )
-  };
+  status("Deleted");
+}
 
-  setStatus(
-    `${nodes.length} item(s) copied.`
+/* ============================================================
+   COPY / PASTE
+   ============================================================ */
+
+function copySelection() {
+
+  const nodes =
+    selectedNodes();
+
+  if (!nodes.length) return;
+
+  state.clipboard =
+    JSON.parse(
+      JSON.stringify(nodes)
+    );
+
+  status(
+    `${nodes.length} component(s) copied`
   );
 }
 
 function pasteSelection() {
+
   if (
-    !clipboardData ||
-    !clipboardData.nodes?.length
+    !state.clipboard?.length
   ) {
     return;
   }
 
-  const idMap =
-    new Map();
+  pushHistory();
 
-  const offset = 35;
+  state.selected.clear();
 
-  const newNodes =
-    clipboardData.nodes.map(
-      oldNode => {
-        const copy =
-          JSON.parse(
-            JSON.stringify(
-              oldNode
-            )
-          );
+  state.clipboard.forEach(
+    original => {
 
-        const newId =
-          uid('node');
-
-        idMap.set(
-          oldNode.id,
-          newId
+      const node =
+        JSON.parse(
+          JSON.stringify(
+            original
+          )
         );
 
-        copy.id =
-          newId;
+      node.id =
+        uid("node");
 
-        copy.x += offset;
+      node.x += 30;
+      node.y += 30;
 
-        copy.y += offset;
+      state.nodes.push(node);
 
-        copy.zIndex =
-          model.nodes.length;
+      state.selected.add(
+        node.id
+      );
+    }
+  );
 
-        return copy;
+  render();
+
+  status("Pasted");
+}
+
+function duplicateSelection() {
+
+  copySelection();
+
+  pasteSelection();
+}
+
+/* ============================================================
+   GROUP / UNGROUP
+   ============================================================ */
+
+function groupSelection() {
+
+  const nodes =
+    selectedNodes();
+
+  if (
+    nodes.length < 2
+  ) {
+    status(
+      "Select at least two objects"
+    );
+
+    return;
+  }
+
+  pushHistory();
+
+  const minX =
+    Math.min(
+      ...nodes.map(
+        n => n.x
+      )
+    );
+
+  const minY =
+    Math.min(
+      ...nodes.map(
+        n => n.y
+      )
+    );
+
+  const maxX =
+    Math.max(
+      ...nodes.map(
+        n =>
+          n.x + n.width
+      )
+    );
+
+  const maxY =
+    Math.max(
+      ...nodes.map(
+        n =>
+          n.y + n.height
+      )
+    );
+
+  const group =
+    createNode(
+      "zone",
+      minX - 20,
+      minY - 20,
+      {
+        label: "Group",
+        width:
+          maxX -
+          minX +
+          40,
+        height:
+          maxY -
+          minY +
+          40
       }
     );
 
-  const newEdges =
-    clipboardData.edges
-      .map(
-        oldEdge => {
-          if (
-            !idMap.has(
-              oldEdge.from
-            ) ||
-            !idMap.has(
-              oldEdge.to
-            )
-          ) {
-            return null;
-          }
-
-          const copy =
-            JSON.parse(
-              JSON.stringify(
-                oldEdge
-              )
-            );
-
-          copy.id =
-            uid('edge');
-
-          copy.from =
-            idMap.get(
-              oldEdge.from
-            );
-
-          copy.to =
-            idMap.get(
-              oldEdge.to
-            );
-
-          return copy;
-        }
+  group.zIndex =
+    Math.min(
+      ...nodes.map(
+        n => n.zIndex
       )
-      .filter(Boolean);
+    ) - 1;
 
-  model.nodes.push(
-    ...newNodes
+  state.nodes.push(
+    group
   );
 
-  model.edges.push(
-    ...newEdges
-  );
+  render();
 
-  selectedIds =
-    new Set(
-      newNodes.map(
-        node =>
-          node.id
+  status("Grouped");
+}
+
+function ungroupSelection() {
+
+  const zones =
+    selectedNodes()
+      .filter(
+        n =>
+          n.shape === "zone"
+      );
+
+  if (!zones.length) {
+
+    status(
+      "Select a group"
+    );
+
+    return;
+  }
+
+  pushHistory();
+
+  state.nodes =
+    state.nodes.filter(
+      n =>
+        !zones.includes(n)
+    );
+
+  state.selected.clear();
+
+  render();
+
+  status("Ungrouped");
+}
+
+/* ============================================================
+   Z ORDER
+   ============================================================ */
+
+function bringForward() {
+
+  const nodes =
+    selectedNodes();
+
+  if (!nodes.length) return;
+
+  pushHistory();
+
+  const max =
+    Math.max(
+      ...state.nodes.map(
+        n => n.zIndex
       )
     );
 
-  selectedId =
-    newNodes[0]?.id ||
-    null;
-
-  render();
-
-  setStatus(
-    `${newNodes.length} item(s) pasted.`
-  );
-}
-
-/* =========================================================
-   DELETE
-   ========================================================= */
-
-function deleteSelected() {
-  if (
-    !selectedIds.size
-  ) {
-    return;
-  }
-
-  const nodeIds =
-    new Set(
-      [...selectedIds]
-        .filter(
-          id =>
-            !id.startsWith(
-              'edge:'
-            )
-        )
-    );
-
-  const edgeIds =
-    new Set(
-      [...selectedIds]
-        .filter(
-          id =>
-            id.startsWith(
-              'edge:'
-            )
-        )
-        .map(
-          id =>
-            id.slice(
-              5
-            )
-        )
-    );
-
-  model.nodes =
-    model.nodes.filter(
-      node =>
-        !nodeIds.has(
-          node.id
-        )
-    );
-
-  model.edges =
-    model.edges.filter(
-      edge =>
-        !nodeIds.has(
-          edge.from
-        ) &&
-        !nodeIds.has(
-          edge.to
-        ) &&
-        !edgeIds.has(
-          edge.id
-        )
-    );
-
-  model.comments =
-    model.comments.filter(
-      comment =>
-        !nodeIds.has(
-          comment.nodeId
-        )
-    );
-
-  model.pins =
-    model.pins.filter(
-      pin =>
-        !nodeIds.has(
-          pin.nodeId
-        )
-    );
-
-  clearSelection();
-
-  render();
-
-  setStatus(
-    'Selected items deleted.'
-  );
-}
-
-/* =========================================================
-   STICKY NOTES
-   ========================================================= */
-
-function createStickyNote(
-  x,
-  y,
-  text = 'Double-click to edit'
-) {
-  const note = {
-    id: uid('sticky'),
-
-    x,
-
-    y,
-
-    width: 180,
-
-    height: 150,
-
-    text
-  };
-
-  model.stickyNotes.push(
-    note
-  );
-
-  render();
-
-  setStatus(
-    'Sticky note added.'
-  );
-
-  return note;
-}
-
-function renderStickyNotes() {
-  if (!nodesEl) {
-    return;
-  }
-
-  model.stickyNotes.forEach(
-    note => {
-      const element =
-        document.createElement(
-          'div'
-        );
-
-      element.className =
-        'sticky-note';
-
-      element.dataset.id =
-        note.id;
-
-      element.style.left =
-        `${note.x}px`;
-
-      element.style.top =
-        `${note.y}px`;
-
-      element.style.width =
-        `${note.width}px`;
-
-      element.style.height =
-        `${note.height}px`;
-
-      element.innerHTML = `
-        <textarea>${escapeHtml(
-          note.text
-        )}</textarea>
-
-        ${resizeHandlesHtml()}
-      `;
-
-      element
-        .querySelector(
-          'textarea'
-        )
-        .addEventListener(
-          'input',
-          event => {
-            note.text =
-              event.target.value;
-          }
-        );
-
-      element.addEventListener(
-        'dblclick',
-        event =>
-          event.stopPropagation()
-      );
-
-      element.addEventListener(
-        'pointerdown',
-        event => {
-          if (
-            event.target.tagName ===
-            'TEXTAREA'
-          ) {
-            return;
-          }
-
-          startGenericDrag(
-            event,
-            note
-          );
-        }
-      );
-
-      nodesEl.appendChild(
-        element
-      );
-    }
-  );
-}
-
-/* =========================================================
-   COMMENTS
-   ========================================================= */
-
-function createComment(
-  x,
-  y,
-  text = 'Comment'
-) {
-  const comment = {
-    id: uid('comment'),
-
-    x,
-
-    y,
-
-    text,
-
-    author: 'You'
-  };
-
-  model.comments.push(
-    comment
-  );
-
-  render();
-
-  setStatus(
-    'Comment added.'
-  );
-
-  return comment;
-}
-
-function renderComments() {
-  if (!nodesEl) {
-    return;
-  }
-
-  model.comments.forEach(
-    comment => {
-      const element =
-        document.createElement(
-          'div'
-        );
-
-      element.className =
-        'comment-node';
-
-      element.dataset.id =
-        comment.id;
-
-      element.style.left =
-        `${comment.x}px`;
-
-      element.style.top =
-        `${comment.y}px`;
-
-      element.innerHTML = `
-        <div class="comment-author">
-          ${escapeHtml(
-            comment.author
-          )}
-        </div>
-
-        <div>
-          ${escapeHtml(
-            comment.text
-          )}
-        </div>
-      `;
-
-      element.addEventListener(
-        'dblclick',
-        () => {
-          const text =
-            prompt(
-              'Comment:',
-              comment.text
-            );
-
-          if (
-            text !== null
-          ) {
-            comment.text =
-              text;
-
-            render();
-          }
-        }
-      );
-
-      element.addEventListener(
-        'pointerdown',
-        event =>
-          startGenericDrag(
-            event,
-            comment
-          )
-      );
-
-      nodesEl.appendChild(
-        element
-      );
-    }
-  );
-}
-
-/* =========================================================
-   PINS
-   ========================================================= */
-
-function createPin(
-  x,
-  y
-) {
-  const pin = {
-    id: uid('pin'),
-
-    x,
-
-    y,
-
-    text: ''
-  };
-
-  model.pins.push(
-    pin
-  );
-
-  render();
-
-  setStatus(
-    'Pin added.'
-  );
-
-  return pin;
-}
-
-function renderPins() {
-  if (!nodesEl) {
-    return;
-  }
-
-  model.pins.forEach(
-    pin => {
-      const element =
-        document.createElement(
-          'div'
-        );
-
-      element.className =
-        'pin-node';
-
-      element.dataset.id =
-        pin.id;
-
-      element.style.left =
-        `${pin.x}px`;
-
-      element.style.top =
-        `${pin.y}px`;
-
-      element.textContent =
-        '📌';
-
-      element.title =
-        pin.text ||
-        'Pin';
-
-      element.addEventListener(
-        'dblclick',
-        () => {
-          const text =
-            prompt(
-              'Pin note:',
-              pin.text
-            );
-
-          if (
-            text !== null
-          ) {
-            pin.text =
-              text;
-
-            render();
-          }
-        }
-      );
-
-      element.addEventListener(
-        'pointerdown',
-        event =>
-          startGenericDrag(
-            event,
-            pin
-          )
-      );
-
-      nodesEl.appendChild(
-        element
-      );
-    }
-  );
-}
-
-/* =========================================================
-   GENERIC DRAG
-   ========================================================= */
-
-function startGenericDrag(
-  event,
-  item
-) {
-  if (
-    event.button !== 0
-  ) {
-    return;
-  }
-
-  const pointer =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  dragState = {
-    generic: true,
-
-    item,
-
-    startPointer: pointer,
-
-    original: {
-      x: item.x,
-
-      y: item.y
-    }
-  };
-
-  const move =
-    moveGenericDrag;
-
-  const up =
-    endGenericDrag;
-
-  window.addEventListener(
-    'pointermove',
-    move
-  );
-
-  window.addEventListener(
-    'pointerup',
-    up,
-    {
-      once: true
+  nodes.forEach(
+    (node, index) => {
+      node.zIndex =
+        max + index + 1;
     }
   );
 
-  event.stopPropagation();
-}
-
-function moveGenericDrag(
-  event
-) {
-  if (
-    !dragState?.generic
-  ) {
-    return;
-  }
-
-  const pointer =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  const dx =
-    pointer.x -
-    dragState.startPointer.x;
-
-  const dy =
-    pointer.y -
-    dragState.startPointer.y;
-
-  dragState.item.x =
-    dragState.original.x +
-    dx;
-
-  dragState.item.y =
-    dragState.original.y +
-    dy;
-
   render();
 }
 
-function endGenericDrag() {
-  window.removeEventListener(
-    'pointermove',
-    moveGenericDrag
-  );
+function sendBackward() {
 
-  dragState = null;
-}
+  const nodes =
+    selectedNodes();
 
-/* =========================================================
-   FREEHAND DRAWING
-   ========================================================= */
+  if (!nodes.length) return;
 
-function startFreehandDrawing(
-  event
-) {
-  if (
-    event.button !== 0
-  ) {
-    return;
-  }
+  pushHistory();
 
-  const point =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  drawingState = {
-    points: [
-      point
-    ]
-  };
-}
-
-function continueDrawing(
-  event
-) {
-  if (!drawingState) {
-    return;
-  }
-
-  const point =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  drawingState.points.push(
-    point
-  );
-
-  renderTemporaryDrawing();
-}
-
-function finishDrawing() {
-  if (!drawingState) {
-    return;
-  }
-
-  if (
-    drawingState.points.length >
-    2
-  ) {
-    model.drawings.push({
-      id: uid('drawing'),
-
-      type: 'freehand',
-
-      points:
-        drawingState.points
-    });
-  }
-
-  drawingState = null;
-
-  render();
-}
-
-function renderTemporaryDrawing() {
-  /* Drawing preview can be added
-     to the SVG layer in the next
-     editor iteration. */
-}
-
-/* =========================================================
-   MULTI-SELECTION RECTANGLE
-   ========================================================= */
-
-function startSelection(
-  event
-) {
-  if (
-    event.button !== 0
-  ) {
-    return;
-  }
-
-  if (
-    event.target !== canvas
-  ) {
-    return;
-  }
-
-  const start =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  selectionState = {
-    start,
-
-    current:
-      start
-  };
-
-  createSelectionBox();
-}
-
-function continueSelection(
-  event
-) {
-  if (!selectionState) {
-    return;
-  }
-
-  selectionState.current =
-    canvasPoint(
-      event.clientX,
-      event.clientY
-    );
-
-  updateSelectionBox();
-}
-
-function finishSelection() {
-  if (!selectionState) {
-    return;
-  }
-
-  const rect =
-    selectionRect(
-      selectionState.start,
-      selectionState.current
-    );
-
-  clearSelection();
-
-  model.nodes.forEach(
-    node => {
-      const intersects =
-        node.x <
-          rect.x +
-            rect.width &&
-        node.x +
-            node.width >
-          rect.x &&
-        node.y <
-          rect.y +
-            rect.height &&
-        node.y +
-            node.height >
-          rect.y;
-
-      if (intersects) {
-        selectedIds.add(
-          node.id
-        );
-      }
+  nodes.forEach(
+    (node, index) => {
+      node.zIndex =
+        index;
     }
   );
 
-  selectedId =
-    [...selectedIds][0] ||
-    null;
+  render();
+}
 
-  removeSelectionBox();
+/* ============================================================
+   DOUBLE CLICK EDIT
+   ============================================================ */
 
-  selectionState = null;
+function editNodeLabel(event) {
+
+  const nodeEl =
+    event.currentTarget;
+
+  const node =
+    nodeById(
+      nodeEl.dataset.id
+    );
+
+  if (!node) return;
+
+  const value =
+    prompt(
+      "Component name:",
+      node.label
+    );
+
+  if (
+    value === null
+  ) {
+    return;
+  }
+
+  pushHistory();
+
+  node.label =
+    value.trim() ||
+    node.label;
 
   render();
 }
 
-function selectionRect(
-  a,
-  b
-) {
-  return {
-    x: Math.min(
-      a.x,
-      b.x
-    ),
+/* ============================================================
+   INSPECTOR
+   ============================================================ */
 
-    y: Math.min(
-      a.y,
-      b.y
-    ),
+function renderInspector() {
 
-    width:
-      Math.abs(
-        b.x - a.x
-      ),
-
-    height:
-      Math.abs(
-        b.y - a.y
-      )
-  };
-}
-
-function createSelectionBox() {
-  removeSelectionBox();
-
-  const box =
-    document.createElement(
-      'div'
+  const inspector =
+    document.querySelector(
+      ".inspector-panel"
     );
 
-  box.id =
-    'selectionBox';
+  if (!inspector) return;
 
-  box.className =
-    'selection-box';
+  const node =
+    selectedNodes()[0];
 
-  canvas.appendChild(
-    box
-  );
-}
+  if (!node) return;
 
-function updateSelectionBox() {
-  const box =
-    $('selectionBox');
+  const name =
+    inspector.querySelector(
+      "#componentName"
+    );
 
-  if (!box) {
-    return;
+  if (name) {
+    name.value =
+      node.label || "";
   }
 
-  const rect =
-    selectionRect(
-      selectionState.start,
-      selectionState.current
+  const environment =
+    inspector.querySelector(
+      "#componentEnvironment"
     );
 
-  box.style.left =
-    `${rect.x}px`;
+  if (environment) {
+    environment.value =
+      node.environment ||
+      "Production";
+  }
 
-  box.style.top =
-    `${rect.y}px`;
+  const owner =
+    inspector.querySelector(
+      "#componentOwner"
+    );
 
-  box.style.width =
-    `${rect.width}px`;
+  if (owner) {
+    owner.value =
+      node.owner || "";
+  }
 
-  box.style.height =
-    `${rect.height}px`;
+  const description =
+    inspector.querySelector(
+      "#componentDescription"
+    );
+
+  if (description) {
+    description.value =
+      node.description || "";
+  }
 }
 
-function removeSelectionBox() {
-  $('selectionBox')
-    ?.remove();
-}
+/* ============================================================
+   INSPECTOR INPUTS
+   ============================================================ */
 
-/* =========================================================
-   CANVAS COORDINATES
-   ========================================================= */
+document.addEventListener(
+  "input",
+  event => {
 
-function canvasPoint(
-  clientX,
-  clientY
-) {
-  const rect =
-    canvas.getBoundingClientRect();
+    const node =
+      selectedNodes()[0];
 
-  return {
-    x:
-      (clientX -
-        rect.left +
-        canvas.scrollLeft) /
-      zoom,
+    if (!node) return;
 
-    y:
-      (clientY -
-        rect.top +
-        canvas.scrollTop) /
-      zoom
-  };
-}
+    if (
+      event.target.id ===
+      "componentName"
+    ) {
 
-/* =========================================================
+      node.label =
+        event.target.value;
+
+      renderNodes();
+    }
+
+    if (
+      event.target.id ===
+      "componentEnvironment"
+    ) {
+
+      node.environment =
+        event.target.value;
+
+      renderNodes();
+    }
+
+    if (
+      event.target.id ===
+      "componentOwner"
+    ) {
+
+      node.owner =
+        event.target.value;
+
+      renderNodes();
+    }
+
+    if (
+      event.target.id ===
+      "componentDescription"
+    ) {
+
+      node.description =
+        event.target.value;
+    }
+  }
+);
+
+/* ============================================================
    ZOOM
-   ========================================================= */
+   ============================================================ */
 
 function setZoom(value) {
-  zoom =
+
+  state.zoom =
     clamp(
       value,
       0.25,
       2.5
     );
 
-  if (nodesEl) {
-    nodesEl.style.transform =
-      `scale(${zoom})`;
+  if (canvasInner) {
 
-    nodesEl.style.transformOrigin =
-      'top left';
+    canvasInner.style.transform =
+      `scale(${state.zoom})`;
+
+    canvasInner.style.transformOrigin =
+      "0 0";
   }
 
-  if (edgesEl) {
-    edgesEl.style.transform =
-      `scale(${zoom})`;
-
-    edgesEl.style.transformOrigin =
-      'top left';
-  }
-
-  updateZoomDisplay();
+  updateZoom();
 }
 
-function updateZoomDisplay() {
-  const level =
-    $('zoomLevel');
+function updateZoom() {
 
-  if (level) {
-    level.textContent =
+  const text =
+    document.querySelector(
+      ".zoom-level"
+    );
+
+  if (text) {
+
+    text.textContent =
       `${Math.round(
-        zoom * 100
+        state.zoom * 100
       )}%`;
   }
 }
 
-function zoomIn() {
-  setZoom(
-    zoom + 0.1
-  );
-}
+/* ============================================================
+   ZOOM BUTTONS
+   ============================================================ */
 
-function zoomOut() {
-  setZoom(
-    zoom - 0.1
-  );
-}
+document.addEventListener(
+  "click",
+  event => {
 
-function resetZoom() {
-  setZoom(1);
-}
+    if (
+      event.target.closest(
+        "#zoomIn"
+      )
+    ) {
 
-/* =========================================================
-   SVG EXPORT
-   ========================================================= */
+      setZoom(
+        state.zoom + 0.1
+      );
+    }
 
-function exportSvgString() {
-  const width =
-    Math.max(
-      canvas.clientWidth,
-      1200
+    if (
+      event.target.closest(
+        "#zoomOut"
+      )
+    ) {
+
+      setZoom(
+        state.zoom - 0.1
+      );
+    }
+
+    if (
+      event.target.closest(
+        "#zoomReset"
+      )
+    ) {
+
+      setZoom(1);
+    }
+
+    if (
+      event.target.closest(
+        "#zoomFit"
+      )
+    ) {
+
+      fitCanvas();
+    }
+  }
+);
+
+/* ============================================================
+   FIT
+   ============================================================ */
+
+function fitCanvas() {
+
+  if (!state.nodes.length) {
+
+    setZoom(1);
+
+    return;
+  }
+
+  const minX =
+    Math.min(
+      ...state.nodes.map(
+        n => n.x
+      )
     );
+
+  const minY =
+    Math.min(
+      ...state.nodes.map(
+        n => n.y
+      )
+    );
+
+  const maxX =
+    Math.max(
+      ...state.nodes.map(
+        n =>
+          n.x + n.width
+      )
+    );
+
+  const maxY =
+    Math.max(
+      ...state.nodes.map(
+        n =>
+          n.y + n.height
+      )
+    );
+
+  const width =
+    maxX - minX + 100;
 
   const height =
-    Math.max(
-      canvas.clientHeight,
-      800
+    maxY - minY + 100;
+
+  const availableWidth =
+    canvas.clientWidth;
+
+  const availableHeight =
+    canvas.clientHeight;
+
+  const scale =
+    Math.min(
+      availableWidth / width,
+      availableHeight / height
     );
 
-  const lines =
-    model.edges
-      .map(edge => {
-        const from =
-          nodeById(
-            edge.from
-          );
+  setZoom(
+    clamp(
+      scale,
+      0.25,
+      1
+    )
+  );
 
-        const to =
-          nodeById(
-            edge.to
-          );
+  canvas.scrollLeft =
+    Math.max(
+      0,
+      minX * state.zoom - 50
+    );
 
-        if (!from || !to) {
-          return '';
-        }
-
-        const points =
-          calculateConnectionPoints(
-            from,
-            to,
-            edge.fromPort,
-            edge.toPort
-          );
-
-        const path =
-          buildEdgePath(
-            points.x1,
-            points.y1,
-            points.x2,
-            points.y2,
-            edge.type ||
-              'straight'
-          );
-
-        return `
-          <path
-            d="${path}"
-            fill="none"
-            stroke="#64748b"
-            stroke-width="2"
-            marker-end="url(#a)"
-          />
-
-          ${
-            edge.label
-              ? `
-                <text
-                  x="${
-                    (points.x1 +
-                      points.x2) /
-                    2
-                  }"
-                  y="${
-                    (points.y1 +
-                      points.y2) /
-                      2 -
-                    6
-                  }"
-                  font-size="11"
-                  fill="#334155"
-                >
-                  ${escapeHtml(
-                    edge.label
-                  )}
-                </text>
-              `
-              : ''
-          }
-        `;
-      })
-      .join('');
-
-  const boxes =
-    model.nodes
-      .map(node => {
-        if (node.image) {
-          return `
-            <g>
-              <rect
-                x="${node.x}"
-                y="${node.y}"
-                width="${node.width}"
-                height="${node.height}"
-                rx="8"
-                fill="#ffffff"
-                stroke="#64748b"
-                stroke-width="2"
-              />
-
-              <image
-                href="${escapeHtml(
-                  node.image
-                )}"
-                x="${node.x}"
-                y="${node.y}"
-                width="${node.width}"
-                height="${node.height}"
-                preserveAspectRatio="xMidYMid meet"
-              />
-            </g>
-          `;
-        }
-
-        return `
-          <g>
-            <rect
-              x="${node.x}"
-              y="${node.y}"
-              width="${node.width}"
-              height="${node.height}"
-              rx="8"
-              fill="${
-                node.type ===
-                'zone'
-                  ? '#dbeafe'
-                  : '#ffffff'
-              }"
-              stroke="#64748b"
-              stroke-width="2"
-            />
-
-            <text
-              x="${node.x + 10}"
-              y="${node.y + 24}"
-              font-size="15"
-            >
-              ${escapeHtml(
-                node.label
-              )}
-            </text>
-
-            <text
-              x="${node.x + 10}"
-              y="${node.y + 46}"
-              font-size="11"
-              fill="#475569"
-            >
-              ${escapeHtml(
-                typeName(
-                  node.type
-                )
-              )}
-            </text>
-          </g>
-        `;
-      })
-      .join('');
-
-  return `
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="${width}"
-      height="${height}"
-      viewBox="0 0 ${width} ${height}"
-    >
-
-      <defs>
-
-        <marker
-          id="a"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="7"
-          markerHeight="7"
-          orient="auto"
-        >
-          <path
-            d="M0 0L10 5L0 10z"
-            fill="#64748b"
-          />
-        </marker>
-
-      </defs>
-
-      <rect
-        width="100%"
-        height="100%"
-        fill="#f1f5f9"
-      />
-
-      ${lines}
-
-      ${boxes}
-
-    </svg>
-  `;
+  canvas.scrollTop =
+    Math.max(
+      0,
+      minY * state.zoom - 50
+    );
 }
 
-/* =========================================================
-   PNG EXPORT
-   ========================================================= */
+/* ============================================================
+   GRID / SNAP
+   ============================================================ */
 
-function exportPng() {
-  const image =
-    new Image();
+document.addEventListener(
+  "click",
+  event => {
+
+    const grid =
+      event.target.closest(
+        "#gridToggle"
+      );
+
+    if (grid) {
+
+      state.grid =
+        !state.grid;
+
+      canvas.classList.toggle(
+        "grid-disabled",
+        !state.grid
+      );
+
+      return;
+    }
+
+    const snap =
+      event.target.closest(
+        "#snapToggle"
+      );
+
+    if (snap) {
+
+      state.snap =
+        !state.snap;
+
+      snap.classList.toggle(
+        "active",
+        state.snap
+      );
+    }
+  }
+);
+
+/* ============================================================
+   SAVE LOCAL
+   ============================================================ */
+
+function serialize() {
+
+  return JSON.stringify(
+    {
+      name: state.name,
+
+      version: "2.0",
+
+      nodes:
+        state.nodes,
+
+      edges:
+        state.edges,
+
+      stickyNotes:
+        state.stickyNotes,
+
+      comments:
+        state.comments,
+
+      pins:
+        state.pins
+    },
+    null,
+    2
+  );
+}
+
+function saveLocal() {
+
+  localStorage.setItem(
+    "cbc-architecture-diagram",
+    serialize()
+  );
+
+  status(
+    "Diagram saved locally"
+  );
+}
+
+function loadLocal() {
+
+  const data =
+    localStorage.getItem(
+      "cbc-architecture-diagram"
+    );
+
+  if (!data) {
+
+    status(
+      "No local diagram found"
+    );
+
+    return;
+  }
+
+  restoreSnapshot(
+    data
+  );
+
+  status(
+    "Local diagram loaded"
+  );
+}
+
+/* ============================================================
+   .ARCH
+   ============================================================ */
+
+function saveArch() {
+
+  const data =
+    serialize();
+
+  downloadFile(
+    `${state.name || "architecture"}.arch`,
+    data,
+    "application/json"
+  );
+
+  status(
+    "Architecture saved"
+  );
+}
+
+function importFile(
+  file,
+  callback
+) {
+
+  const reader =
+    new FileReader();
+
+  reader.onload =
+    () => {
+
+      try {
+
+        const parsed =
+          JSON.parse(
+            reader.result
+          );
+
+        callback(parsed);
+
+      } catch {
+
+        alert(
+          "Invalid architecture file."
+        );
+      }
+    };
+
+  reader.readAsText(file);
+}
+
+function loadArchFile(file) {
+
+  importFile(
+    file,
+    data => {
+
+      state.name =
+        data.name ||
+        "Untitled architecture";
+
+      state.nodes =
+        data.nodes || [];
+
+      state.edges =
+        data.edges || [];
+
+      state.stickyNotes =
+        data.stickyNotes || [];
+
+      state.comments =
+        data.comments || [];
+
+      state.pins =
+        data.pins || [];
+
+      clearSelection();
+
+      render();
+
+      status(
+        "Architecture loaded"
+      );
+    }
+  );
+}
+
+/* ============================================================
+   JSON EXPORT
+   ============================================================ */
+
+function exportJSON() {
+
+  downloadFile(
+    "architecture.json",
+    serialize(),
+    "application/json"
+  );
+
+  status(
+    "JSON exported"
+  );
+}
+
+/* ============================================================
+   SVG EXPORT
+   ============================================================ */
+
+function exportSVG() {
+
+  const width =
+    3000;
+
+  const height =
+    2000;
+
+  let svg = `
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="${width}"
+  height="${height}"
+  viewBox="0 0 ${width} ${height}"
+>
+
+<rect
+  width="100%"
+  height="100%"
+  fill="#eef2f8"
+/>
+`;
+
+  /* EDGES */
+
+  state.edges.forEach(
+    edge => {
+
+      let d = "";
+
+      if (
+        edge.freeform
+      ) {
+
+        d =
+          freePath(
+            edge.points
+          );
+
+      } else {
+
+        const from =
+          nodeById(edge.from);
+
+        const to =
+          nodeById(edge.to);
+
+        if (!from || !to)
+          return;
+
+        const ports =
+          nearestPort(
+            from,
+            to
+          );
+
+        const a =
+          portPoint(
+            from,
+            ports.from
+          );
+
+        const b =
+          portPoint(
+            to,
+            ports.to
+          );
+
+        if (
+          edge.type ===
+          "curved"
+        ) {
+
+          d =
+            curvedPath(
+              a,
+              b
+            );
+
+        } else if (
+          edge.type ===
+          "elbow"
+        ) {
+
+          d =
+            elbowPath(
+              a,
+              b
+            );
+
+        } else if (
+          edge.type ===
+          "wavy"
+        ) {
+
+          d =
+            wavyPath(
+              a,
+              b
+            );
+
+        } else {
+
+          d =
+            straightPath(
+              a,
+              b
+            );
+        }
+      }
+
+      svg += `
+<path
+  d="${d}"
+  fill="none"
+  stroke="#64748b"
+  stroke-width="2"
+  ${
+    edge.style ===
+    "dashed"
+      ? `stroke-dasharray="8 5"`
+      : ""
+  }
+  ${
+    edge.style ===
+    "dotted"
+      ? `stroke-dasharray="2 5"`
+      : ""
+  }
+/>
+`;
+    }
+  );
+
+  /* NODES */
+
+  state.nodes.forEach(
+    node => {
+
+      if (node.image) {
+
+        svg += `
+<image
+  href="${node.image}"
+  x="${node.x}"
+  y="${node.y}"
+  width="${node.width}"
+  height="${node.height}"
+  preserveAspectRatio="xMidYMid meet"
+/>
+`;
+
+        return;
+      }
+
+      svg += `
+<rect
+  x="${node.x}"
+  y="${node.y}"
+  width="${node.width}"
+  height="${node.height}"
+  rx="8"
+  fill="white"
+  stroke="#b9c4d7"
+  stroke-width="2"
+/>
+
+<text
+  x="${node.x + 10}"
+  y="${node.y + 28}"
+  font-family="Arial"
+  font-size="14"
+  font-weight="700"
+  fill="#172033"
+>
+${escapeXml(node.label)}
+</text>
+`;
+    }
+  );
+
+  svg += `
+</svg>
+`;
+
+  downloadFile(
+    "architecture.svg",
+    svg,
+    "image/svg+xml"
+  );
+
+  status(
+    "SVG exported"
+  );
+}
+
+function escapeXml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&apos;"
+    );
+}
+
+/* ============================================================
+   PNG EXPORT
+   ============================================================ */
+
+function exportPNG() {
 
   const svg =
-    exportSvgString();
+    document.querySelector(
+      "#edges"
+    );
 
-  image.onload =
+  if (!svg) return;
+
+  const clone =
+    svg.cloneNode(true);
+
+  clone.setAttribute(
+    "xmlns",
+    "http://www.w3.org/2000/svg"
+  );
+
+  const serializer =
+    new XMLSerializer();
+
+  const source =
+    serializer.serializeToString(
+      clone
+    );
+
+  const blob =
+    new Blob(
+      [source],
+      {
+        type:
+          "image/svg+xml"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const img =
+    new Image();
+
+  img.onload =
     () => {
-      const output =
+
+      const canvasOut =
         document.createElement(
-          'canvas'
+          "canvas"
         );
 
-      output.width =
-        canvas.clientWidth *
-        2;
+      canvasOut.width =
+        3000;
 
-      output.height =
-        canvas.clientHeight *
-        2;
+      canvasOut.height =
+        2000;
 
       const ctx =
-        output.getContext(
-          '2d'
+        canvasOut.getContext(
+          "2d"
         );
 
-      ctx.scale(
-        2,
-        2
+      ctx.fillStyle =
+        "#eef2f8";
+
+      ctx.fillRect(
+        0,
+        0,
+        canvasOut.width,
+        canvasOut.height
       );
 
       ctx.drawImage(
-        image,
+        img,
         0,
         0
       );
 
-      output.toBlob(
-        blob =>
-          download(
-            blob,
-            'architecture-diagram.png'
-          ),
-        'image/png'
+      canvasOut.toBlob(
+        png => {
+
+          const pngUrl =
+            URL.createObjectURL(
+              png
+            );
+
+          const a =
+            document.createElement(
+              "a"
+            );
+
+          a.href =
+            pngUrl;
+
+          a.download =
+            "architecture.png";
+
+          a.click();
+
+          URL.revokeObjectURL(
+            pngUrl
+          );
+        },
+        "image/png"
+      );
+
+      URL.revokeObjectURL(
+        url
       );
     };
 
-  image.src =
-    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-      svg
-    )}`;
+  img.src =
+    url;
 }
 
-/* =========================================================
-   DRAG/DROP COMPONENT PALETTE
-   ========================================================= */
+/* ============================================================
+   NEW DIAGRAM
+   ============================================================ */
 
-function initializePalette() {
-  const palette =
-    $('palette');
+function newDiagram() {
 
-  if (!palette) {
+  if (
+    state.nodes.length &&
+    !confirm(
+      "Create a new diagram?"
+    )
+  ) {
     return;
   }
 
-  palette.innerHTML =
-    catalog
-      .map(
-        ([type, icon, label]) =>
-          `
-          <button
-            class="palette-item"
-            draggable="true"
-            data-type="${type}"
-          >
-            <span class="palette-icon">
-              ${icon}
-            </span>
+  state.name =
+    "Untitled architecture";
 
-            <span class="palette-label">
-              ${escapeHtml(
-                label
-              )}
-            </span>
-          </button>
-        `
+  state.nodes =
+    [];
+
+  state.edges =
+    [];
+
+  state.stickyNotes =
+    [];
+
+  state.comments =
+    [];
+
+  state.pins =
+    [];
+
+  state.selected.clear();
+
+  state.history.length =
+    0;
+
+  state.future.length =
+    0;
+
+  render();
+
+  status(
+    "New diagram created"
+  );
+}
+
+/* ============================================================
+   AUTO LAYOUT
+   ============================================================ */
+
+function autoLayout() {
+
+  if (
+    state.nodes.length < 2
+  ) {
+
+    status(
+      "Add more components first"
+    );
+
+    return;
+  }
+
+  pushHistory();
+
+  const columns =
+    Math.ceil(
+      Math.sqrt(
+        state.nodes.length
       )
-      .join('');
+    );
 
-  palette
-    .querySelectorAll(
-      '.palette-item'
-    )
-    .forEach(
-      element => {
-        element.addEventListener(
-          'dragstart',
-          event => {
-            event.dataTransfer.setData(
-              'component-type',
-              element.dataset.type
+  const gapX = 220;
+  const gapY = 140;
+
+  state.nodes.forEach(
+    (node, index) => {
+
+      const col =
+        index % columns;
+
+      const row =
+        Math.floor(
+          index / columns
+        );
+
+      node.x =
+        100 +
+        col * gapX;
+
+      node.y =
+        100 +
+        row * gapY;
+    }
+  );
+
+  render();
+
+  status(
+    "Automatic layout applied"
+  );
+}
+
+/* ============================================================
+   VALIDATION
+   ============================================================ */
+
+function validateDiagram() {
+
+  const findings = [];
+
+  state.nodes.forEach(
+    node => {
+
+      const incoming =
+        state.edges.filter(
+          e =>
+            e.to === node.id
+        ).length;
+
+      const outgoing =
+        state.edges.filter(
+          e =>
+            e.from === node.id
+        ).length;
+
+      if (
+        incoming === 0 &&
+        outgoing === 0
+      ) {
+
+        findings.push(
+          `${node.label} has no connections`
+        );
+      }
+    }
+  );
+
+  if (!findings.length) {
+
+    alert(
+      "✓ Architecture validation passed."
+    );
+
+  } else {
+
+    alert(
+      "Architecture findings:\n\n" +
+      findings.join("\n")
+    );
+  }
+
+  status(
+    "Validation complete"
+  );
+}
+
+/* ============================================================
+   IMPACT
+   ============================================================ */
+
+function impactAnalysis() {
+
+  const node =
+    selectedNodes()[0];
+
+  if (!node) {
+
+    status(
+      "Select a component first"
+    );
+
+    return;
+  }
+
+  const affected =
+    new Set();
+
+  function walk(id) {
+
+    state.edges
+      .filter(
+        edge =>
+          edge.from === id
+      )
+      .forEach(
+        edge => {
+
+          if (
+            affected.has(
+              edge.to
+            )
+          ) {
+            return;
+          }
+
+          affected.add(
+            edge.to
+          );
+
+          walk(
+            edge.to
+          );
+        }
+      );
+  }
+
+  walk(node.id);
+
+  alert(
+    `Impact analysis for "${node.label}"\n\n` +
+    `Affected components: ${affected.size}`
+  );
+
+  state.selected =
+    new Set([
+      node.id,
+      ...affected
+    ]);
+
+  render();
+}
+
+/* ============================================================
+   BUTTON BINDINGS
+   ============================================================ */
+
+function bind(id, fn) {
+
+  const el = $(id);
+
+  if (!el) return;
+
+  el.addEventListener(
+    "click",
+    fn
+  );
+}
+
+bind(
+  "newDiagram",
+  newDiagram
+);
+
+bind(
+  "saveArch",
+  saveArch
+);
+
+bind(
+  "saveDiagram",
+  saveLocal
+);
+
+bind(
+  "exportJson",
+  exportJSON
+);
+
+bind(
+  "exportSvg",
+  exportSVG
+);
+
+bind(
+  "exportPng",
+  exportPNG
+);
+
+bind(
+  "autoLayout",
+  autoLayout
+);
+
+bind(
+  "validateDiagram",
+  validateDiagram
+);
+
+bind(
+  "impactMode",
+  impactAnalysis
+);
+
+bind(
+  "groupButton",
+  groupSelection
+);
+
+bind(
+  "ungroupButton",
+  ungroupSelection
+);
+
+bind(
+  "copyButton",
+  copySelection
+);
+
+bind(
+  "pasteButton",
+  pasteSelection
+);
+
+bind(
+  "duplicateButton",
+  duplicateSelection
+);
+
+bind(
+  "deleteButton",
+  deleteSelection
+);
+
+bind(
+  "bringForward",
+  bringForward
+);
+
+bind(
+  "sendBackward",
+  sendBackward
+);
+
+bind(
+  "undoButton",
+  undo
+);
+
+bind(
+  "redoButton",
+  redo
+);
+
+/* ============================================================
+   FILE INPUTS
+   ============================================================ */
+
+$("loadDiagram")
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const file =
+        event.target.files?.[0];
+
+      if (file) {
+
+        loadArchFile(file);
+      }
+
+      event.target.value =
+        "";
+    }
+  );
+
+$("importJson")
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const file =
+        event.target.files?.[0];
+
+      if (file) {
+
+        importFile(
+          file,
+          data => {
+
+            state.name =
+              data.name ||
+              "Untitled architecture";
+
+            state.nodes =
+              data.nodes || [];
+
+            state.edges =
+              data.edges || [];
+
+            state.stickyNotes =
+              data.stickyNotes || [];
+
+            state.comments =
+              data.comments || [];
+
+            state.pins =
+              data.pins || [];
+
+            clearSelection();
+
+            render();
+
+            status(
+              "JSON imported"
             );
           }
         );
       }
-    );
-}
-
-/* =========================================================
-   CANVAS DRAG/DROP
-   ========================================================= */
-
-function initializeCanvasDrop() {
-  if (!canvas) {
-    return;
-  }
-
-  canvas.addEventListener(
-    'dragover',
-    event => {
-      event.preventDefault();
-
-      canvas.classList.add(
-        'drop-target'
-      );
-    }
-  );
-
-  canvas.addEventListener(
-    'dragleave',
-    () => {
-      canvas.classList.remove(
-        'drop-target'
-      );
-    }
-  );
-
-  canvas.addEventListener(
-    'drop',
-    async event => {
-      event.preventDefault();
-
-      canvas.classList.remove(
-        'drop-target'
-      );
-
-      const files =
-        [...(
-          event.dataTransfer
-            ?.files || []
-        )];
-
-      const point =
-        canvasPoint(
-          event.clientX,
-          event.clientY
-        );
-
-      const imageFile =
-        files.find(
-          file =>
-            file.type.startsWith(
-              'image/'
-            )
-        );
-
-      if (imageFile) {
-        await insertImageFile(
-          imageFile,
-          point.x,
-          point.y
-        );
-
-        return;
-      }
-
-      const type =
-        event.dataTransfer.getData(
-          'component-type'
-        );
-
-      if (!type) {
-        return;
-      }
-
-      addNode(
-        type,
-        Math.max(
-          0,
-          point.x - 75
-        ),
-        Math.max(
-          0,
-          point.y - 38
-        )
-      );
-
-      setStatus(
-        `${typeName(type)} added.`
-      );
-    }
-  );
-}
-
-/* =========================================================
-   LOCAL FILE IMAGE INPUT
-   ========================================================= */
-
-function createImageInput() {
-  const input =
-    document.createElement(
-      'input'
-    );
-
-  input.type =
-    'file';
-
-  input.accept =
-    'image/*';
-
-  input.style.display =
-    'none';
-
-  document.body.appendChild(
-    input
-  );
-
-  input.addEventListener(
-    'change',
-    async () => {
-      const file =
-        input.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      const point =
-        canvasPoint(
-          canvas.clientWidth / 2 +
-            canvas.getBoundingClientRect()
-              .left,
-
-          canvas.clientHeight / 2 +
-            canvas.getBoundingClientRect()
-              .top
-        );
-
-      await insertImageFile(
-        file,
-        point.x - 100,
-        point.y - 75
-      );
-
-      input.value =
-        '';
-    }
-  );
-
-  return input;
-}
-
-let imageInput;
-
-/* =========================================================
-   KEYBOARD SHORTCUTS
-   ========================================================= */
-
-document.addEventListener(
-  'keydown',
-  event => {
-    const target =
-      event.target;
-
-    const typing =
-      target instanceof
-        HTMLInputElement ||
-      target instanceof
-        HTMLTextAreaElement ||
-      target instanceof
-        HTMLSelectElement;
-
-    const modifier =
-      event.ctrlKey ||
-      event.metaKey;
-
-    /* Ctrl + A */
-
-    if (
-      modifier &&
-      event.key.toLowerCase() ===
-        'a'
-    ) {
-      if (
-        !typing ||
-        target ===
-          $('diagramName')
-      ) {
-        event.preventDefault();
-
-        selectAll();
-      }
-
-      return;
-    }
-
-    /* Ctrl + C */
-
-    if (
-      modifier &&
-      event.key.toLowerCase() ===
-        'c'
-    ) {
-      if (!typing) {
-        event.preventDefault();
-
-        copySelection();
-      }
-
-      return;
-    }
-
-    /* Ctrl + V */
-
-    if (
-      modifier &&
-      event.key.toLowerCase() ===
-        'v'
-    ) {
-      if (!typing) {
-        event.preventDefault();
-
-        pasteSelection();
-      }
-
-      return;
-    }
-
-    /* Delete */
-
-    if (
-      [
-        'Delete',
-        'Backspace'
-      ].includes(
-        event.key
-      ) &&
-      !typing
-    ) {
-      event.preventDefault();
-
-      deleteSelected();
-
-      return;
-    }
-
-    /* Escape */
-
-    if (
-      event.key ===
-      'Escape'
-    ) {
-      connectMode =
-        false;
-
-      connectSourceId =
-        null;
-
-      removeSelectionBox();
-
-      selectionState =
-        null;
-
-      setStatus(
-        'Operation cancelled.'
-      );
-
-      render();
-
-      return;
-    }
-
-    /* Zoom */
-
-    if (
-      modifier &&
-      (
-        event.key ===
-          '+' ||
-        event.key ===
-          '='
-      )
-    ) {
-      event.preventDefault();
-
-      zoomIn();
-
-      return;
-    }
-
-    if (
-      modifier &&
-      event.key ===
-        '-'
-    ) {
-      event.preventDefault();
-
-      zoomOut();
-
-      return;
-    }
-
-    if (
-      modifier &&
-      event.key ===
-        '0'
-    ) {
-      event.preventDefault();
-
-      resetZoom();
-
-      return;
-    }
-  }
-);
-
-/* =========================================================
-   CLIPBOARD
-   ========================================================= */
-
-document.addEventListener(
-  'paste',
-  handleClipboardPaste
-);
-
-/* =========================================================
-   CANVAS CLICK
-   ========================================================= */
-
-if (canvas) {
-  canvas.addEventListener(
-    'pointerdown',
-    event => {
-      if (
-        event.target !==
-        canvas
-      ) {
-        return;
-      }
-
-      if (
-        event.button !== 0
-      ) {
-        return;
-      }
-
-      if (
-        event.shiftKey
-      ) {
-        startSelection(
-          event
-        );
-
-        return;
-      }
-
-      if (
-        !connectMode
-      ) {
-        clearSelection();
-
-        render();
-      }
-    }
-  );
-}
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-
-$('newDiagram')
-  ?.addEventListener(
-    'click',
-    newDiagram
-  );
-
-$('saveDiagram')
-  ?.addEventListener(
-    'click',
-    saveLocally
-  );
-
-$('loadDiagram')
-  ?.addEventListener(
-    'click',
-    loadLocally
-  );
-
-$('exportJson')
-  ?.addEventListener(
-    'click',
-    () =>
-      download(
-        new Blob(
-          [exportData()],
-          {
-            type:
-              'application/json'
-          }
-        ),
-        'architecture-diagram.json'
-      )
-  );
-
-$('exportSvg')
-  ?.addEventListener(
-    'click',
-    () =>
-      download(
-        new Blob(
-          [
-            exportSvgString()
-          ],
-          {
-            type:
-              'image/svg+xml'
-          }
-        ),
-        'architecture-diagram.svg'
-      )
-  );
-
-$('exportPng')
-  ?.addEventListener(
-    'click',
-    exportPng
-  );
-
-$('importJson')
-  ?.addEventListener(
-    'change',
-    async event => {
-      await importDiagramFile(
-        event.target.files?.[0]
-      );
 
       event.target.value =
-        '';
+        "";
     }
   );
 
-$('deleteSelected')
-  ?.addEventListener(
-    'click',
-    deleteSelected
-  );
+/* ============================================================
+   IMAGE BUTTON
+   ============================================================ */
 
-$('validateDiagram')
-  ?.addEventListener(
-    'click',
-    validate
-  );
+bind(
+  "insertImage",
+  openImagePicker
+);
 
-$('autoLayout')
-  ?.addEventListener(
-    'click',
-    autoLayout
-  );
-
-/* =========================================================
-   CONNECT MODE BUTTON
-   ========================================================= */
-
-$('connectMode')
-  ?.addEventListener(
-    'click',
-    () => {
-      connectMode =
-        !connectMode;
-
-      connectSourceId =
-        null;
-
-      $('connectMode')
-        .setAttribute(
-          'aria-pressed',
-          connectMode
-        );
-
-      setStatus(
-        connectMode
-          ? 'Select a source component, then its destination.'
-          : 'Connection mode turned off.'
-      );
-
-      render();
-    }
-  );
-
-/* =========================================================
-   IMPACT MODE
-   ========================================================= */
-
-$('impactMode')
-  ?.addEventListener(
-    'click',
-    () => {
-      impactMode =
-        !impactMode;
-
-      $('impactMode')
-        .setAttribute(
-          'aria-pressed',
-          impactMode
-        );
-
-      render();
-
-      setStatus(
-        impactMode
-          ? 'Select a component to highlight downstream impact.'
-          : 'Impact mode turned off.'
-      );
-    }
-  );
-
-/* =========================================================
+/* ============================================================
    DIAGRAM NAME
-   ========================================================= */
+   ============================================================ */
 
-$('diagramName')
+$("diagramName")
   ?.addEventListener(
-    'input',
+    "input",
     event => {
-      model.name =
+
+      state.name =
         event.target.value;
     }
   );
 
-/* =========================================================
-   TEMPLATE BUTTONS
-   ========================================================= */
+/* ============================================================
+   SEARCH
+   ============================================================ */
 
-document
-  .querySelectorAll(
-    '.template-button'
-  )
-  .forEach(
-    button => {
-      button.addEventListener(
-        'click',
-        () =>
-          template(
-            button.dataset.template
-          )
-      );
+$("librarySearch")
+  ?.addEventListener(
+    "input",
+    event => {
+
+      const query =
+        event.target.value
+          .toLowerCase()
+          .trim();
+
+      document
+        .querySelectorAll(
+          ".palette-item"
+        )
+        .forEach(item => {
+
+          const text =
+            item.textContent
+              .toLowerCase();
+
+          item.style.display =
+            !query ||
+            text.includes(query)
+              ? ""
+              : "none";
+        });
     }
   );
 
-/* =========================================================
-   OPTIONAL EXTENDED BUTTONS
-   ========================================================= */
+/* ============================================================
+   RIGHT CLICK
+   ============================================================ */
 
-function bindOptionalButton(
-  id,
-  callback
-) {
-  $(id)?.addEventListener(
-    'click',
-    callback
+canvas?.addEventListener(
+  "contextmenu",
+  event => {
+
+    event.preventDefault();
+
+    const node =
+      event.target.closest(
+        ".node"
+      );
+
+    if (node) {
+
+      selectOnly(
+        node.dataset.id
+      );
+
+      deleteSelection();
+    }
+  }
+);
+
+/* ============================================================
+   INITIALIZE
+   ============================================================ */
+
+function initialize() {
+
+  state.tool =
+    "select";
+
+  state.connectorType =
+    "straight";
+
+  state.connectorStyle =
+    "solid";
+
+  render();
+
+  updateToolButtons();
+
+  status(
+    "Architecture Diagram Builder ready"
   );
 }
 
-bindOptionalButton(
-  'saveArch',
-  saveArchFile
-);
-
-bindOptionalButton(
-  'openImage',
-  () => imageInput?.click()
-);
-
-bindOptionalButton(
-  'addSticky',
-  () => {
-    const point =
-      canvasPoint(
-        canvas.clientWidth / 2 +
-          canvas.getBoundingClientRect()
-            .left,
-
-        canvas.clientHeight / 2 +
-          canvas.getBoundingClientRect()
-            .top
-      );
-
-    createStickyNote(
-      point.x - 90,
-      point.y - 75
-    );
-  }
-);
-
-bindOptionalButton(
-  'addComment',
-  () => {
-    const point =
-      canvasPoint(
-        canvas.clientWidth / 2 +
-          canvas.getBoundingClientRect()
-            .left,
-
-        canvas.clientHeight / 2 +
-          canvas.getBoundingClientRect()
-            .top
-      );
-
-    createComment(
-      point.x,
-      point.y
-    );
-  }
-);
-
-bindOptionalButton(
-  'addPin',
-  () => {
-    const point =
-      canvasPoint(
-        canvas.clientWidth / 2 +
-          canvas.getBoundingClientRect()
-            .left,
-
-        canvas.clientHeight / 2 +
-          canvas.getBoundingClientRect()
-            .top
-      );
-
-    createPin(
-      point.x,
-      point.y
-    );
-  }
-);
-
-bindOptionalButton(
-  'zoomIn',
-  zoomIn
-);
-
-bindOptionalButton(
-  'zoomOut',
-  zoomOut
-);
-
-bindOptionalButton(
-  'resetZoom',
-  resetZoom
-);
-
-bindOptionalButton(
-  'saveArchFile',
-  saveArchFile
-);
-
-/* =========================================================
-   EDGE TOOL BUTTONS
-   ========================================================= */
-
-document
-  .querySelectorAll(
-    '[data-edge-type]'
-  )
-  .forEach(
-    button => {
-      button.addEventListener(
-        'click',
-        () => {
-          currentEdgeType =
-            button.dataset.edgeType;
-
-          setStatus(
-            `Connector type: ${currentEdgeType}.`
-          );
-        }
-      );
-    }
-  );
-
-document
-  .querySelectorAll(
-    '[data-edge-style]'
-  )
-  .forEach(
-    button => {
-      button.addEventListener(
-        'click',
-        () => {
-          currentEdgeStyle =
-            button.dataset.edgeStyle;
-
-          setStatus(
-            `Connector style: ${currentEdgeStyle}.`
-          );
-        }
-      );
-    }
-  );
-
-/* =========================================================
-   IMAGE INPUT
-   ========================================================= */
-
-imageInput =
-  createImageInput();
-
-/* =========================================================
-   INITIALIZATION
-   ========================================================= */
-
-initializePalette();
-
-initializeCanvasDrop();
-
-ensureModel();
-
-/*
-  Start with the original AIOps template,
-  preserving the behavior of the previous version.
-*/
-
-template('aiops');
-
-setZoom(1);
-
-setStatus(
-  'Ready. Create, connect, annotate and export your architecture.'
-);
+initialize();
