@@ -3,26 +3,185 @@
 
 /* ---------- library ---------- */
 const CATALOG = [
-  ["cloud","☁","Cloud"],["azure","◆","Microsoft Azure"],["aws","■","AWS"],["gcp","●","Google Cloud"],
-  ["region","◎","Cloud Region"],["az","▦","Availability Zone"],["vm","▣","Virtual Machine"],["server","▣","Server"],
-  ["container","⬡","Container"],["aks","✥","AKS Cluster"],["kubernetes","✤","Kubernetes"],["docker","◈","Docker"],
-  ["function","ƒ","Serverless Function"],["app","▣","Application"],["microservice","◇","Microservice"],["internet","◎","Internet"],
-  ["api","⇄","API Gateway"],["gateway","↔","Gateway"],["loadbalancer","⚖","Load Balancer"],["firewall","▤","Firewall"],
-  ["waf","◫","Web Application Firewall"],["vpn","⌁","VPN Gateway"],["dns","⌁","DNS"],["cdn","◉","CDN"],
-  ["database","▤","Database"],["sql","▥","SQL Database"],["nosql","▧","NoSQL Database"],["storage","▱","Object Storage"],
-  ["cache","▤","Cache"],["queue","⇉","Message Queue"],["eventbus","⚡","Event Bus"],["stream","≋","Event Stream"],
-  ["servicenow","◉","ServiceNow"],["monitoring","◌","Monitoring"],["logs","≋","Log Analytics"],["siem","◉","SIEM"],
-  ["identity","🔑","Identity Provider"],["keyvault","◆","Secrets / Key Vault"],["policy","▤","Policy"],["user","●","User"],
-  ["mobile","▯","Mobile App"],["desktop","▣","Desktop App"],["network","⌁","Network"],["subnet","□","Subnet"],
-  ["router","↔","Router"],["switch","⇄","Switch"],["storageacct","▱","Storage Account"],["vector","◈","Vector DB"],
-  ["llm","✦","LLM / AI Model"],["rag","⌁","RAG Service"],["agent","✦","AI Agent"],["zone","▧","Security Zone"]
+  // Core architecture
+  ["cloud","cloud","Cloud","Core Architecture"],["region","region","Cloud Region","Core Architecture"],["az","region","Availability Zone","Core Architecture"],["zone","zone","Availability Zone","Core Architecture"],
+  ["environment","environment","Environment","Core Architecture"],["datacenter","datacenter","Data Center","Core Architecture"],["server","server","Server","Core Architecture"],
+  ["vm","vm","Virtual Machine","Core Architecture"],["baremetal","server","Bare Metal Server","Core Architecture"],["cluster","cluster","Compute Cluster","Core Architecture"],
+  ["application","application","Application","Core Architecture"],["app","application","Application","Core Architecture"],["microservice","microservice","Microservice","Core Architecture"],["desktop","client","Desktop Application","Core Architecture"],["service","service","Service","Core Architecture"],
+  ["container","container","Container","Core Architecture"],["aks","kubernetes","AKS Cluster","Containers & DevOps"],["storage","storage","Object Storage","Core Architecture"],["storageacct","storage","Storage Account","Core Architecture"],["database","database","Database","Core Architecture"],
+  ["sql","database","SQL Database","Core Architecture"],["nosql","database","NoSQL Database","Core Architecture"],["cache","cache","Cache","Core Architecture"],
+  ["queue","queue","Message Queue","Core Architecture"],["eventbus","eventbus","Event Bus","Core Architecture"],["stream","stream","Event Stream","Core Architecture"],
+  ["api","api","API Gateway","Core Architecture"],["gateway","gateway","Gateway","Core Architecture"],["identity","identity","Identity Provider","Core Architecture"],
+
+  // Network & Internet
+  ["internet","internet","Internet","Network & Internet"],["user","user","User","Network & Internet"],["client","client","Client","Network & Internet"],
+  ["browser","browser","Web Browser","Network & Internet"],["mobile","mobile","Mobile Client","Network & Internet"],["dns","dns","DNS","Network & Internet"],
+  ["router","router","Router","Network & Internet"],["switch","switch","Network Switch","Network & Internet"],["core-switch","switch","Core Switch","Network & Internet"],
+  ["gateway-router","gateway","Gateway Router","Network & Internet"],["proxy","proxy","Proxy","Network & Internet"],["reverse-proxy","proxy","Reverse Proxy","Network & Internet"],
+  ["loadbalancer","loadbalancer","Load Balancer","Network & Internet"],["alb","loadbalancer","Application Load Balancer","Network & Internet"],["nlb","loadbalancer","Network Load Balancer","Network & Internet"],
+  ["cdn","cdn","CDN","Network & Internet"],["vpn","vpn","VPN Gateway","Network & Internet"],["site-vpn","vpn","Site-to-Site VPN","Network & Internet"],
+  ["private-link","network","Private Link","Network & Internet"],["subnet","subnet","Subnet","Network & Internet"],["vlan","network","VLAN","Network & Internet"],
+  ["nat","gateway","NAT Gateway","Network & Internet"],["dhcp","network","DHCP","Network & Internet"],["ipam","network","IPAM","Network & Internet"],
+  ["network-firewall","firewall","Network Firewall","Network & Internet"],["waf","waf","Web Application Firewall","Network & Internet"],["dns-zone","dns","DNS Zone","Network & Internet"],
+  ["endpoint","network","Network Endpoint","Network & Internet"],["service-endpoint","network","Service Endpoint","Network & Internet"],["network-zone","zone","Network Zone","Network & Internet"],
+  ["ethernet","network","Ethernet","Network & Internet"],["wifi","network","Wi-Fi","Network & Internet"],["bgp","network","BGP Router","Network & Internet"],
+
+  // Security & Identity
+  ["firewall","firewall","Firewall","Security & Identity"],["ids","security","IDS","Security & Identity"],["ips","security","IPS","Security & Identity"],
+  ["siem","siem","SIEM","Security & Identity"],["soar","security","SOAR","Security & Identity"],["edr","security","EDR","Security & Identity"],
+  ["casb","security","CASB","Security & Identity"],["ddos","security","DDoS Protection","Security & Identity"],["security-zone","zone","Security Zone","Security & Identity"],
+  ["iam","identity","IAM","Security & Identity"],["sso","identity","SSO","Security & Identity"],["directory","identity","Directory Service","Security & Identity"],
+  ["managed-identity","identity","Managed Identity","Security & Identity"],["keyvault","key","Secrets / Key Vault","Security & Identity"],["kms","key","Key Management Service","Security & Identity"],
+  ["secrets","key","Secrets Manager","Security & Identity"],["certificate","certificate","Certificate Authority","Security & Identity"],["policy","policy","Policy Engine","Security & Identity"],
+  ["zero-trust","security","Zero Trust","Security & Identity"],["bastion","security","Bastion Host","Security & Identity"],["security-group","security","Security Group","Security & Identity"],
+  ["compliance","security","Compliance","Security & Identity"],["vulnerability","security","Vulnerability Scanner","Security & Identity"],
+
+  // AWS
+  ["aws","aws","AWS","AWS"],["aws-vpc","vpc","Amazon VPC","AWS"],["aws-subnet","subnet","VPC Subnet","AWS"],["aws-ec2","vm","Amazon EC2","AWS"],
+  ["aws-ecs","container","Amazon ECS","AWS"],["aws-eks","kubernetes","Amazon EKS","AWS"],["aws-fargate","container","AWS Fargate","AWS"],
+  ["aws-lambda","function","AWS Lambda","AWS"],["aws-elb","loadbalancer","Elastic Load Balancing","AWS"],["aws-alb","loadbalancer","Application Load Balancer","AWS"],
+  ["aws-nlb","loadbalancer","Network Load Balancer","AWS"],["aws-apigw","api","Amazon API Gateway","AWS"],["aws-cloudfront","cdn","Amazon CloudFront","AWS"],
+  ["aws-route53","dns","Amazon Route 53","AWS"],["aws-waf","waf","AWS WAF","AWS"],["aws-shield","security","AWS Shield","AWS"],
+  ["aws-iam","identity","AWS IAM","AWS"],["aws-cognito","identity","Amazon Cognito","AWS"],["aws-s3","storage","Amazon S3","AWS"],
+  ["aws-ebs","storage","Amazon EBS","AWS"],["aws-efs","storage","Amazon EFS","AWS"],["aws-rds","database","Amazon RDS","AWS"],
+  ["aws-aurora","database","Amazon Aurora","AWS"],["aws-dynamodb","database","Amazon DynamoDB","AWS"],["aws-elasticache","cache","Amazon ElastiCache","AWS"],
+  ["aws-sqs","queue","Amazon SQS","AWS"],["aws-sns","eventbus","Amazon SNS","AWS"],["aws-eventbridge","eventbus","Amazon EventBridge","AWS"],
+  ["aws-kinesis","stream","Amazon Kinesis","AWS"],["aws-msk","stream","Amazon MSK","AWS"],["aws-ecr","container","Amazon ECR","AWS"],
+  ["aws-cloudwatch","monitor","Amazon CloudWatch","AWS"],["aws-cloudtrail","audit","AWS CloudTrail","AWS"],["aws-secrets","key","AWS Secrets Manager","AWS"],
+  ["aws-kms","key","AWS KMS","AWS"],["aws-bedrock","ai","Amazon Bedrock","AWS"],["aws-opensearch","search","Amazon OpenSearch","AWS"],
+
+  // Azure
+  ["azure","azure","Microsoft Azure","Azure"],["azure-vnet","vpc","Azure Virtual Network","Azure"],["azure-subnet","subnet","Azure Subnet","Azure"],
+  ["azure-vm","vm","Azure Virtual Machine","Azure"],["azure-vmss","cluster","Virtual Machine Scale Set","Azure"],["azure-aks","kubernetes","Azure Kubernetes Service","Azure"],
+  ["azure-functions","function","Azure Functions","Azure"],["azure-appservice","application","Azure App Service","Azure"],["azure-containerapps","container","Azure Container Apps","Azure"],
+  ["azure-acr","container","Azure Container Registry","Azure"],["azure-lb","loadbalancer","Azure Load Balancer","Azure"],["azure-appgw","loadbalancer","Azure Application Gateway","Azure"],
+  ["azure-frontdoor","cdn","Azure Front Door","Azure"],["azure-cdn","cdn","Azure CDN","Azure"],["azure-apim","api","Azure API Management","Azure"],
+  ["azure-dns","dns","Azure DNS","Azure"],["azure-firewall","firewall","Azure Firewall","Azure"],["azure-waf","waf","Azure WAF","Azure"],
+  ["azure-vpngw","vpn","Azure VPN Gateway","Azure"],["azure-expressroute","network","Azure ExpressRoute","Azure"],["azure-entra","identity","Microsoft Entra ID","Azure"],
+  ["azure-managed-id","identity","Azure Managed Identity","Azure"],["azure-keyvault","key","Azure Key Vault","Azure"],["azure-storage","storage","Azure Storage Account","Azure"],
+  ["azure-blob","storage","Azure Blob Storage","Azure"],["azure-files","storage","Azure Files","Azure"],["azure-sql","database","Azure SQL Database","Azure"],
+  ["azure-cosmos","database","Azure Cosmos DB","Azure"],["azure-redis","cache","Azure Cache for Redis","Azure"],["azure-servicebus","queue","Azure Service Bus","Azure"],
+  ["azure-eventgrid","eventbus","Azure Event Grid","Azure"],["azure-eventhubs","stream","Azure Event Hubs","Azure"],["azure-monitor","monitor","Azure Monitor","Azure"],
+  ["azure-loganalytics","logs","Log Analytics Workspace","Azure"],["azure-sentinel","siem","Microsoft Sentinel","Azure"],["azure-openai","ai","Azure OpenAI","Azure"],
+  ["azure-aisearch","search","Azure AI Search","Azure"],
+
+  // Google Cloud
+  ["gcp","gcp","Google Cloud","Google Cloud"],["gcp-vpc","vpc","Google VPC","Google Cloud"],["gcp-subnet","subnet","VPC Subnet","Google Cloud"],
+  ["gcp-compute","vm","Compute Engine","Google Cloud"],["gcp-gke","kubernetes","Google Kubernetes Engine","Google Cloud"],["gcp-cloudrun","container","Cloud Run","Google Cloud"],
+  ["gcp-functions","function","Cloud Functions","Google Cloud"],["gcp-lb","loadbalancer","Cloud Load Balancing","Google Cloud"],["gcp-apigw","api","API Gateway","Google Cloud"],
+  ["gcp-cdn","cdn","Cloud CDN","Google Cloud"],["gcp-dns","dns","Cloud DNS","Google Cloud"],["gcp-armor","waf","Cloud Armor","Google Cloud"],
+  ["gcp-vpn","vpn","Cloud VPN","Google Cloud"],["gcp-interconnect","network","Cloud Interconnect","Google Cloud"],["gcp-iam","identity","Cloud IAM","Google Cloud"],
+  ["gcp-secrets","key","Secret Manager","Google Cloud"],["gcp-kms","key","Cloud KMS","Google Cloud"],["gcp-storage","storage","Cloud Storage","Google Cloud"],
+  ["gcp-persistentdisk","storage","Persistent Disk","Google Cloud"],["gcp-cloudsql","database","Cloud SQL","Google Cloud"],["gcp-alloydb","database","AlloyDB","Google Cloud"],
+  ["gcp-spanner","database","Cloud Spanner","Google Cloud"],["gcp-firestore","database","Firestore","Google Cloud"],["gcp-bigtable","database","Bigtable","Google Cloud"],
+  ["gcp-memorystore","cache","Memorystore","Google Cloud"],["gcp-pubsub","queue","Pub/Sub","Google Cloud"],["gcp-dataflow","stream","Dataflow","Google Cloud"],
+  ["gcp-dataproc","cluster","Dataproc","Google Cloud"],["gcp-vertex","ai","Vertex AI","Google Cloud"],["gcp-logging","logs","Cloud Logging","Google Cloud"],
+  ["gcp-monitoring","monitor","Cloud Monitoring","Google Cloud"],
+
+  // Containers & DevOps
+  ["kubernetes","kubernetes","Kubernetes","Containers & DevOps"],["k8s-node","server","Kubernetes Node","Containers & DevOps"],["k8s-pod","container","Kubernetes Pod","Containers & DevOps"],
+  ["k8s-deployment","cluster","Kubernetes Deployment","Containers & DevOps"],["k8s-service","service","Kubernetes Service","Containers & DevOps"],["k8s-ingress","gateway","Kubernetes Ingress","Containers & DevOps"],
+  ["k8s-configmap","policy","ConfigMap","Containers & DevOps"],["k8s-secret","key","Kubernetes Secret","Containers & DevOps"],["docker","container","Docker","Containers & DevOps"],
+  ["container-registry","container","Container Registry","Containers & DevOps"],["jenkins","pipeline","Jenkins","Containers & DevOps"],["github-actions","pipeline","GitHub Actions","Containers & DevOps"],
+  ["gitlab-ci","pipeline","GitLab CI/CD","Containers & DevOps"],["terraform","terraform","Terraform","Containers & DevOps"],["ansible","automation","Ansible","Containers & DevOps"],
+  ["argocd","pipeline","Argo CD","Containers & DevOps"],["helm","package","Helm","Containers & DevOps"],["api-dev","api","Developer Portal","Containers & DevOps"],
+
+  // Data, Integration & AI
+  ["database","database","Database","Data & AI"],["sql","database","SQL Database","Data & AI"],["nosql","database","NoSQL Database","Data & AI"],
+  ["warehouse","database","Data Warehouse","Data & AI"],["datalake","storage","Data Lake","Data & AI"],["lakehouse","storage","Data Lakehouse","Data & AI"],
+  ["etl","pipeline","ETL / Data Pipeline","Data & AI"],["kafka","stream","Apache Kafka","Data & AI"],["eventstream","stream","Event Stream","Data & AI"],
+  ["messagebroker","queue","Message Broker","Data & AI"],["vector","vector","Vector Database","Data & AI"],["search","search","Search Engine","Data & AI"],
+  ["llm","ai","LLM / AI Model","Data & AI"],["ai-agent","ai","AI Agent","Data & AI"],
+  ["embedding","ai","Embedding Service","Data & AI"],["featurestore","database","Feature Store","Data & AI"],["mlflow","ai","ML Lifecycle","Data & AI"],
+
+  // Observability & Enterprise
+  ["monitoring","monitor","Monitoring","Observability & Enterprise"],["logs","logs","Log Analytics","Observability & Enterprise"],["tracing","monitor","Distributed Tracing","Observability & Enterprise"],
+  ["metrics","monitor","Metrics","Observability & Enterprise"],["alerting","monitor","Alerting","Observability & Enterprise"],["servicenow","service","ServiceNow","Observability & Enterprise"],
+  ["itsm","service","ITSM","Observability & Enterprise"],["confluence","document","Knowledge Base","Observability & Enterprise"],["ticket","service","Incident / Ticket","Observability & Enterprise"],
+  ["backup","storage","Backup","Observability & Enterprise"],["dr","storage","Disaster Recovery","Observability & Enterprise"],["rubrik","storage","Rubrik","Observability & Enterprise"],
+  ["qualys","security","Qualys","Observability & Enterprise"],["zabbix","monitor","Zabbix","Observability & Enterprise"],["splunk","siem","Splunk","Observability & Enterprise"],
+  ["newrelic","monitor","New Relic","Observability & Enterprise"],["solarwinds","monitor","SolarWinds","Observability & Enterprise"]
 ];
 const $ = id => document.getElementById(id);
 const canvas=$("canvas"), inner=$("canvasInner"), nodesEl=$("nodes"), edgesEl=$("edges");
 const uid=()=>`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
 const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-const libName=t=>(CATALOG.find(x=>x[0]===t)||["","◇",t])[2];
-const libIcon=t=>(CATALOG.find(x=>x[0]===t)||["","◇",t])[1];
+const libEntry=t=>CATALOG.find(x=>x[0]===t)||[t,"application",t,"Core Architecture"];
+const libName=t=>libEntry(t)[2];
+const libIcon=t=>iconSvg(libEntry(t)[1], libEntry(t)[0]);
+const libCategory=t=>libEntry(t)[3];
+
+
+/* ---------- local professional SVG icon system ---------- */
+const ICON_PATHS={
+ cloud:`<path d="M7 18h10.5a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.5 7.7 4.2 4.2 0 0 0 7 18Z"/>`,
+ azure:`<path d="M13.5 3 7 16h5.2l2.2-4.2 2.4 4.2h3.7L13.5 3Z"/><path d="M4 17h8.2l-2.1-3.8L4 17Z"/>`,
+ aws:`<path d="M5 15c3 2.1 7 2.7 11 1.4"/><path d="M16 14.5 18 17l-3 .4"/><path d="M6 12.5V7.8l4-2.3 4 2.3v4.7l-4 2.3-4-2.3Z"/>`,
+ gcp:`<path d="M6 16.5 4.7 14A5 5 0 0 1 9 6.2l2.1 3.6A2.1 2.1 0 0 0 8.9 13L10 15H6Z"/><path d="M11 6.2 13.3 6a5 5 0 0 1 4.1 8l-2.1-1.2a2.2 2.2 0 0 0-1.9-3.2H11V6.2Z"/><path d="M7 16h9"/>`,
+ internet:`<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.2 2.3 3.2 5 3.2 8s-1 5.7-3.2 8c-2.2-2.3-3.2-5-3.2-8S9.8 6.3 12 4Z"/>`,
+ user:`<circle cx="12" cy="8" r="3"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/>`,
+ client:`<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M9 20h6M12 16v4"/>`,
+ browser:`<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 8h16M8 6h.01M11 6h.01M14 6h.01"/>`,
+ mobile:`<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M10 18h4"/>`,
+ server:`<rect x="4" y="4" width="16" height="6" rx="1"/><rect x="4" y="14" width="16" height="6" rx="1"/><path d="M7 7h.01M7 17h.01"/>`,
+ vm:`<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8v6H8zM12 3v2M12 19v2"/>`,
+ cluster:`<circle cx="12" cy="6" r="2.5"/><circle cx="6" cy="16" r="2.5"/><circle cx="18" cy="16" r="2.5"/><path d="m10.2 8-3 5.7M13.8 8l3 5.7M8.5 16h7"/>`,
+ application:`<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h8M8 12h5M8 16h3"/>`,
+ microservice:`<circle cx="7" cy="12" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="m9.6 10.7 4.8-2.5M9.6 13.3l4.8 2.5"/>`,
+ service:`<path d="M7 5h10l2 3v8l-2 3H7l-2-3V8l2-3Z"/><path d="M8 9h8M8 13h5"/>`,
+ container:`<path d="m5 8 7-4 7 4v8l-7 4-7-4V8Z"/><path d="M5 8l7 4 7-4M12 12v8"/>`,
+ storage:`<path d="M5 6h14v12H5z"/><path d="M8 9h8M8 12h8M8 15h5"/>`,
+ database:`<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>`,
+ cache:`<path d="M5 7c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3Z"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>`,
+ queue:`<path d="M4 7h13M4 12h13M4 17h13"/><path d="m15 5 3 2-3 2M15 10l3 2-3 2M15 15l3 2-3 2"/>`,
+ eventbus:`<circle cx="6" cy="12" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="18" cy="17" r="2"/><path d="M8 11l8-3M8 13l8 3"/>`,
+ stream:`<path d="M4 8c3-3 5-3 8 0s5 3 8 0M4 12c3-3 5-3 8 0s5 3 8 0M4 16c3-3 5-3 8 0s5 3 8 0"/>`,
+ api:`<path d="M5 12h14M15 7l5 5-5 5M9 17l-5-5 5-5"/>`,
+ gateway:`<path d="M4 12h16M7 7l-3 5 3 5M17 7l3 5-3 5"/>`,
+ loadbalancer:`<path d="M12 4v16M5 8h14M5 16h14"/><circle cx="5" cy="8" r="2"/><circle cx="19" cy="8" r="2"/><circle cx="5" cy="16" r="2"/><circle cx="19" cy="16" r="2"/>`,
+ firewall:`<path d="M5 4h14v16H5z"/><path d="M5 8h14M5 12h14M5 16h14M10 4v4M15 8v4M10 12v4M15 16v4"/>`,
+ waf:`<path d="M6 4h12l2 4-2 12H6L4 8l2-4Z"/><path d="M8 9h8M8 13h6M8 17h4"/>`,
+ vpn:`<path d="M6 10V8a6 6 0 0 1 12 0v2"/><rect x="5" y="10" width="14" height="10" rx="2"/><circle cx="12" cy="15" r="1"/>`,
+ dns:`<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2 2.2 3 4.8 3 8s-1 5.8-3 8"/>`,
+ cdn:`<circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="m7 7 3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/>`,
+ network:`<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="M8.3 10.8 15.7 8.2M8.3 13.2l7.4 2.6"/>`,
+ subnet:`<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 2"/><path d="M8 12h8M12 8v8"/>`,
+ router:`<rect x="4" y="8" width="16" height="8" rx="2"/><path d="M7 12h10M8 10h.01M16 10h.01"/>`,
+ switch:`<rect x="4" y="8" width="16" height="8" rx="2"/><path d="m7 12 3-2M7 12l3 2M17 12l-3-2M17 12l-3 2"/>`,
+ proxy:`<path d="M5 7h14v10H5z"/><path d="M8 10h8M8 14h5"/>`,
+ vpc:`<path d="M5 4h14v16H5z"/><path d="M9 8h6v8H9zM5 12h4M15 12h4"/>`,
+ key:`<circle cx="8" cy="10" r="3"/><path d="m10 12 7 7M14 16l2-2M12 14l2-2"/>`,
+ identity:`<circle cx="12" cy="8" r="3"/><path d="M6 19a6 6 0 0 1 12 0"/><path d="M17 5h3v4"/>`,
+ security:`<path d="M12 3 19 6v5c0 4.5-2.8 7.5-7 10-4.2-2.5-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/>`,
+ siem:`<path d="M5 5h14v14H5z"/><path d="M8 15v-3M12 15V8M16 15v-5"/>`,
+ certificate:`<path d="M6 4h10l3 3v13H6z"/><path d="M16 4v4h3M9 12h6M9 16h4"/>`,
+ policy:`<path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h5M8 17h3"/>`,
+ monitor:`<rect x="4" y="5" width="16" height="12" rx="2"/><path d="M7 13l3-3 2 2 4-5M9 20h6"/>`,
+ logs:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>`,
+ audit:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>`,
+ function:`<path d="M8 5c-2 2-2 10 0 12M16 5c2 2 2 10 0 12M6 12h12"/>`,
+ ai:`<path d="M8 5h8l3 3v8l-3 3H8l-3-3V8l3-3Z"/><circle cx="10" cy="11" r="1"/><circle cx="14" cy="11" r="1"/><path d="M9 15h6M12 2v3"/>`,
+ vector:`<path d="m5 16 5-5 4 4 5-7"/><path d="M5 19h14"/>`,
+ search:`<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/>`,
+ pipeline:`<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="7" cy="7" r="2"/><circle cx="13" cy="12" r="2"/><circle cx="18" cy="17" r="2"/>`,
+ terraform:`<path d="m5 5 7 4v7l-7-4V5ZM12 9l7-4v7l-7 4V9ZM12 16l7-4v7l-7 4v-7Z"/>`,
+ automation:`<path d="M12 3v5M12 16v5M3 12h5M16 12h5M5.6 5.6l3.5 3.5M14.9 14.9l3.5 3.5M18.4 5.6l-3.5 3.5M9.1 14.9l-3.5 3.5"/><circle cx="12" cy="12" r="4"/>`,
+ package:`<path d="m5 7 7-4 7 4-7 4-7-4ZM5 7v10l7 4 7-4V7M12 11v10"/>`,
+ document:`<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h3M9 11h6M9 15h6"/>`
+};
+
+const CATEGORY_ACCENT={
+ "Core Architecture":"#52627a","Network & Internet":"#0f75b5","Security & Identity":"#9a4d19",
+ "AWS":"#c56a00","Azure":"#2764f0","Google Cloud":"#3b65d1","Containers & DevOps":"#5a4db2",
+ "Data & AI":"#7b4fb3","Observability & Enterprise":"#237a63"
+};
+function iconSvg(kind,id=""){
+ const body=ICON_PATHS[kind]||ICON_PATHS.application;
+ const accent=libEntrySafe(id)?.[3]||"Core Architecture";
+ const color=CATEGORY_ACCENT[accent]||"#52627a";
+ return `<svg class="catalog-svg" viewBox="0 0 24 24" aria-hidden="true" style="--icon-color:${color}">${body}</svg>`;
+}
+function libEntrySafe(t){ return CATALOG.find(x=>x[0]===t)||null; }
 
 let model={version:4,name:"Untitled architecture",items:[],edges:[]};
 let selected=new Set(), selectedEdge=null, tool="select", connector="straight", lineStyle="solid";
@@ -526,15 +685,41 @@ canvas.addEventListener("pointerdown",ev=>{
 /* ---------- library ---------- */
 function renderPalette(filter=""){
  const q=filter.trim().toLowerCase();
- $("palette").innerHTML=CATALOG.filter(x=>!q||x[2].toLowerCase().includes(q)||x[0].includes(q)).map(([t,i,n])=>
- `<button class="palette-item" draggable="true" data-type="${t}"><span class="palette-icon">${i}</span><span class="palette-label">${n}</span></button>`).join("");
+ const filtered=CATALOG.filter(x=>!q||x[2].toLowerCase().includes(q)||x[0].toLowerCase().includes(q)||x[3].toLowerCase().includes(q));
+ const groups=[...new Set(filtered.map(x=>x[3]))];
+ $("palette").innerHTML=groups.map(category=>{
+   const items=filtered.filter(x=>x[3]===category);
+   return `<div class="library-category" data-category="${esc(category)}">
+     <button class="library-category-title" type="button" data-category-toggle="${esc(category)}">
+       <span>${esc(category)}</span><span class="category-count">${items.length}</span><span class="category-chevron">⌄</span>
+     </button>
+     <div class="palette palette-category-grid">
+       ${items.map(([t,i,n])=>`<button class="palette-item" draggable="true" data-type="${t}" title="${esc(n)}">
+         <span class="palette-icon">${iconSvg(i,t)}</span><span class="palette-label">${esc(n)}</span>
+       </button>`).join("")}
+     </div>
+   </div>`;
+ }).join("");
+
+ document.querySelectorAll("[data-category-toggle]").forEach(btn=>{
+   btn.addEventListener("click",()=>{
+     const box=btn.closest(".library-category");
+     box.classList.toggle("collapsed");
+   });
+ });
+
  document.querySelectorAll(".palette-item").forEach(b=>{
    b.addEventListener("click",()=>{
      const r=canvas.getBoundingClientRect(),p=canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2);
-     commit();addItem("node",p[0]-75,p[1]-38,{type:b.dataset.type,label:libName(b.dataset.type)});status(`${libName(b.dataset.type)} added.`)
+     commit();addItem("node",p[0]-75,p[1]-38,{type:b.dataset.type,label:libName(b.dataset.type)});
+     status(`${libName(b.dataset.type)} added.`);
    });
-   b.addEventListener("dragstart",e=>{e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("application/x-architecture-type",b.dataset.type);e.dataTransfer.setData("text/plain",b.dataset.type)})
- })
+   b.addEventListener("dragstart",e=>{
+     e.dataTransfer.effectAllowed="copy";
+     e.dataTransfer.setData("application/x-architecture-type",b.dataset.type);
+     e.dataTransfer.setData("text/plain",b.dataset.type);
+   });
+ });
 }
 $("componentSearch").addEventListener("input",e=>renderPalette(e.target.value));
 canvas.addEventListener("dragover",e=>{e.preventDefault();canvas.classList.add("drop-target")});
