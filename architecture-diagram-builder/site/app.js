@@ -184,25 +184,23 @@ function renderEdges(){
    if(selectedEdge===e.id){
      if(e.type==="curved"&&e.controls?.length===2)e.controls.forEach((p,i)=>edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="5"></circle>`));
      if(e.type==="freeform"&&e.points?.length){
-       const pts=e.points;
-       // Show only a small number of handles so a free-form stroke never looks dotted.
-       const maxHandles=10;
-       const step=Math.max(1,Math.ceil((pts.length-2)/maxHandles));
-       for(let i=1;i<pts.length-1;i+=step){
-         const p=pts[i];
-         edgesEl.insertAdjacentHTML("beforeend",
-           `<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="5"></circle>`);
-       }
+       // Free-form paths are rendered as real strokes, not dotted control-point
+       // rings. Keep the path clean while selected; the user can still move the
+       // entire connector using the normal selection/drag behavior.
      }
      if(e.type==="elbow"){const a=getItem(e.from),b=getItem(e.to);if(a&&b)edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-mid="${e.id}" cx="${e.midX??((portPoint(a,e.fromPort||"right")[0]+portPoint(b,e.toPort||"left")[0])/2)}" cy="${((portPoint(a,e.fromPort||"right")[1]+portPoint(b,e.toPort||"left")[1])/2)}" r="5"></circle>`)}
    }
  });
  if(drawing?.points?.length){
    const s=drawing.source;
-   let d;
-   if(s)d=`M ${portPoint(s,drawing.sourcePort)[0]} ${portPoint(s,drawing.sourcePort)[1]} `+drawing.points.map(p=>`L ${p[0]} ${p[1]}`).join(" ");
-   else d=drawing.points.map((p,i)=>`${i?"L":"M"} ${p[0]} ${p[1]}`).join(" ");
-   edgesEl.insertAdjacentHTML("beforeend",`<path class="edge selected" d="${d}" stroke="${lineColor()}" stroke-width="${lineWidth()}" marker-end="url(#m-arrow)"></path>`);
+   let previewPoints=normalizeFreeformPoints(drawing.points);
+   if(s){
+     const start=portPoint(s,drawing.sourcePort);
+     previewPoints=[start,...previewPoints];
+   }
+   const d=smoothPath(previewPoints);
+   edgesEl.insertAdjacentHTML("beforeend",
+     `<path class="edge selected" d="${d}" stroke="${lineColor()}" stroke-width="${lineWidth()}" fill="none" marker-end="url(#m-arrow)"></path>`);
  }
 }
 function renderItem(n){
