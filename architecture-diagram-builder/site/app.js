@@ -91,27 +91,80 @@ function markerAttr(e,which){
  const v=e[which+"Marker"]||"none";
  return v==="none"?"":` marker-${which}="url(#m-${v})"`;
 }
+function smoothPath(points){
+  if(!points || points.length < 2) return "";
+  if(points.length === 2){
+    return `M ${points[0][0]} ${points[0][1]} L ${points[1][0]} ${points[1][1]}`;
+  }
+
+  // Catmull-Rom -> cubic Bézier conversion.
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+  for(let i=0;i<points.length-1;i++){
+    const p0 = points[i-1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i+1];
+    const p3 = points[i+2] || p2;
+
+    const c1x = p1[0] + (p2[0]-p0[0]) / 6;
+    const c1y = p1[1] + (p2[1]-p0[1]) / 6;
+    const c2x = p2[0] - (p3[0]-p1[0]) / 6;
+    const c2y = p2[1] - (p3[1]-p1[1]) / 6;
+
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
+
+function normalizeFreeformPoints(points){
+  if(!points || !points.length) return [];
+  const out=[points[0]];
+  for(let i=1;i<points.length;i++){
+    const a=out[out.length-1], b=points[i];
+    if(Math.hypot(b[0]-a[0],b[1]-a[1]) >= 3) out.push(b);
+  }
+  return out;
+}
+
 function edgePath(e){
- const a=getItem(e.from),b=getItem(e.to);
- if(!a||!b)return"";
- const [x1,y1]=portPoint(a,e.fromPort||"right"),[x2,y2]=portPoint(b,e.toPort||"left");
- if(e.type==="freeform" && e.points?.length) return e.points.map((p,i)=>`${i?"L":"M"} ${p[0]} ${p[1]}`).join(" ");
- if(e.type==="curved"){
-   const c=e.controls?.length===2?e.controls:[[x1+(x2-x1)*.35,y1],[x1+(x2-x1)*.65,y2]];
-   return `M ${x1} ${y1} C ${c[0][0]} ${c[0][1]}, ${c[1][0]} ${c[1][1]}, ${x2} ${y2}`;
- }
- if(e.type==="wavy"){
-   const steps=Math.max(12,Math.min(36,Math.round(Math.hypot(x2-x1,y2-y1)/35)));
-   const dx=(x2-x1)/steps,dy=(y2-y1)/steps,len=Math.hypot(x2-x1,y2-y1)||1,nx=-dy/len*12,ny=dx/len*12;
-   let d=`M ${x1} ${y1}`;
-   for(let i=1;i<=steps;i++){const t=i/steps,s=Math.sin(t*Math.PI*e.waves*2)*(i===steps?0:1);d+=` L ${x1+dx*i+nx*s} ${y1+dy*i+ny*s}`}
-   return d;
- }
- if(e.type==="elbow"){
-   const mx=e.midX??(x1+x2)/2;
-   return `M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2} ${y2}`;
- }
- return `M ${x1} ${y1} L ${x2} ${y2}`;
+  const a=getItem(e.from), b=getItem(e.to);
+
+  // Standalone free-form/draw paths do not require attached nodes.
+  if(e.type==="freeform" && e.points?.length){
+    return smoothPath(normalizeFreeformPoints(e.points));
+  }
+
+  if(!a || !b) return "";
+
+  const [x1,y1]=portPoint(a,e.fromPort||"right");
+  const [x2,y2]=portPoint(b,e.toPort||"left");
+
+  if(e.type==="curved"){
+    const c=e.controls?.length===2
+      ? e.controls
+      : [[x1+(x2-x1)*.35,y1],[x1+(x2-x1)*.65,y2]];
+    return `M ${x1} ${y1} C ${c[0][0]} ${c[0][1]}, ${c[1][0]} ${c[1][1]}, ${x2} ${y2}`;
+  }
+
+  if(e.type==="wavy"){
+    const steps=Math.max(18,Math.min(80,Math.round(Math.hypot(x2-x1,y2-y1)/18)));
+    const dx=(x2-x1)/steps, dy=(y2-y1)/steps;
+    const len=Math.hypot(x2-x1,y2-y1)||1;
+    const nx=-dy/len*12, ny=dx/len*12;
+    let d=`M ${x1} ${y1}`;
+    for(let i=1;i<=steps;i++){
+      const t=i/steps;
+      const s=Math.sin(t*Math.PI*(e.waves||3)*2)*(i===steps?0:1);
+      d+=` L ${x1+dx*i+nx*s} ${y1+dy*i+ny*s}`;
+    }
+    return d;
+  }
+
+  if(e.type==="elbow"){
+    const mx=e.midX??(x1+x2)/2;
+    return `M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2} ${y2}`;
+  }
+
+  return `M ${x1} ${y1} L ${x2} ${y2}`;
 }
 function edgeLabelPos(e){
  const a=getItem(e.from),b=getItem(e.to);if(!a||!b)return[0,0];
@@ -126,11 +179,21 @@ function renderEdges(){
    const cls=`edge ${sel?"selected ":""}${impacted.has(e.to)?"impact ":""}`;
    const dash=e.style==="dashed"?"stroke-dasharray:8 5;":e.style==="dotted"?"stroke-dasharray:2 5;":"";
    const common=`data-edge-id="${e.id}" d="${d}" stroke="${e.color||"#52627a"}" stroke-width="${e.width||2}" style="${dash}"${markerAttr(e,"start")}${markerAttr(e,"end")}`;
-   edgesEl.insertAdjacentHTML("beforeend",`<path class="edge-hit" data-edge-id="${e.id}" d="${d}"></path><path class="${cls}" ${common}></path>`);
+   edgesEl.insertAdjacentHTML("beforeend",`<path class="edge-hit" data-edge-id="${e.id}" d="${d}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke"></path><path class="${cls}" ${common}></path>`);
    if(e.label){const [x,y]=edgeLabelPos(e);edgesEl.insertAdjacentHTML("beforeend",`<text class="edge-label" x="${x}" y="${y}">${esc(e.label)}</text>`)}
    if(selectedEdge===e.id){
      if(e.type==="curved"&&e.controls?.length===2)e.controls.forEach((p,i)=>edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="5"></circle>`));
-     if(e.type==="freeform"&&e.points?.length)e.points.forEach((p,i)=>{if(i>0&&i<e.points.length-1)edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="4"></circle>`)});
+     if(e.type==="freeform"&&e.points?.length){
+       const pts=e.points;
+       // Show only a small number of handles so a free-form stroke never looks dotted.
+       const maxHandles=10;
+       const step=Math.max(1,Math.ceil((pts.length-2)/maxHandles));
+       for(let i=1;i<pts.length-1;i+=step){
+         const p=pts[i];
+         edgesEl.insertAdjacentHTML("beforeend",
+           `<circle class="edge-control" data-edge-control="${e.id}" data-index="${i}" cx="${p[0]}" cy="${p[1]}" r="5"></circle>`);
+       }
+     }
      if(e.type==="elbow"){const a=getItem(e.from),b=getItem(e.to);if(a&&b)edgesEl.insertAdjacentHTML("beforeend",`<circle class="edge-control" data-edge-mid="${e.id}" cx="${e.midX??((portPoint(a,e.fromPort||"right")[0]+portPoint(b,e.toPort||"left")[0])/2)}" cy="${((portPoint(a,e.fromPort||"right")[1]+portPoint(b,e.toPort||"left")[1])/2)}" r="5"></circle>`)}
    }
  });
@@ -215,7 +278,10 @@ function onItemPointerDown(ev){
  const n=getItem(ev.currentTarget.dataset.id);
  if(ev.target.dataset.resize){startResize(ev,n,ev.target.dataset.resize);return}
  if(ev.target.dataset.port && tool==="connector"){beginConnector(ev,n,ev.target.dataset.port);return}
- if(tool==="connector"){beginConnector(ev,n,nearestPort(n,...canvasPoint(ev.clientX,ev.clientY)));return}
+ if(tool==="connector"){
+   beginConnector(ev,n,nearestPort(n,...canvasPoint(ev.clientX,ev.clientY)));
+   return;
+ }
  if(tool==="pan")return;
  selectItem(n.id,ev.shiftKey||ev.ctrlKey||ev.metaKey);
  commit();
@@ -247,37 +313,144 @@ function editItem(n){
 
 /* ---------- connectors ---------- */
 function beginConnector(ev,n,port){
- tool="connector";setTool("connector");
+ tool="connector";
+ setTool("connector");
  const p=portPoint(n,port);
- drawing={source:n,sourcePort:port,points:[p]};
- selected.clear();selected.add(n.id);selectedEdge=null;
- status(`Connecting from ${n.label||n.kind}. Release on another object.`);
+ drawing={
+   mode:"connector",
+   source:n,
+   sourcePort:port,
+   points:[p],
+   pointerId:ev.pointerId
+ };
+ selected.clear();
+ selected.add(n.id);
+ selectedEdge=null;
+ ev.currentTarget?.setPointerCapture?.(ev.pointerId);
+ status(`Connecting from ${n.label||n.kind}. Drag to another object and release.`);
 }
-function beginFreeDraw(ev){
- const p=canvasPoint(ev.clientX,ev.clientY);drawing={source:null,sourcePort:null,points:[p]};status("Drawing free-form line. Release to finish.")
+
+function beginFreeDraw(ev, mode="draw"){
+ const p=canvasPoint(ev.clientX,ev.clientY);
+ drawing={
+   mode,
+   source:null,
+   sourcePort:null,
+   points:[p],
+   pointerId:ev.pointerId
+ };
+ canvas.setPointerCapture?.(ev.pointerId);
+ status(mode==="draw"
+   ? "Draw: drag across the canvas, then release."
+   : "Free-form connector: drag the path, then release.");
 }
 function finishDrawing(ev){
- if(!drawing)return;
- const hit=objectAt(ev.clientX,ev.clientY);
- const pts=drawing.points.slice();
- if(drawing.source && hit && hit.id!==drawing.source.id){
-   commit();
-   const p=canvasPoint(ev.clientX,ev.clientY);
-   const e={id:uid(),from:drawing.source.id,to:hit.id,fromPort:drawing.sourcePort,toPort:nearestPort(hit,p[0],p[1]),type:connector,style:lineStyle,width:lineWidth(),color:lineColor(),startMarker:startMarker(),endMarker:endMarker(),label:$("edgeLabel").value.trim(),waves:3};
-   if(e.type==="curved"){
-     const a=portPoint(drawing.source,drawing.sourcePort),b=portPoint(hit,e.toPort);
-     e.controls=[[a[0]+(b[0]-a[0])*.35,a[1]],[a[0]+(b[0]-a[0])*.65,b[1]]];
-   }
-   if(e.type==="elbow"){const a=portPoint(drawing.source,drawing.sourcePort),b=portPoint(hit,e.toPort);e.midX=(a[0]+b[0])/2}
-   if(e.type==="freeform")e.points=pts.length>1?pts:[portPoint(drawing.source,drawing.sourcePort),p];
-   model.edges.push(e);selected.clear();selectedEdge=e.id;drawing=null;render();status("Arrow created. Select it to adjust its style or control points.");return;
- }
- if(!drawing.source && pts.length>1){
-   commit();
-   const e={id:uid(),from:null,to:null,fromPort:null,toPort:null,type:"freeform",style:lineStyle,width:lineWidth(),color:lineColor(),startMarker:startMarker(),endMarker:endMarker(),label:"",points:pts};
-   model.edges.push(e);selectedEdge=e.id;drawing=null;render();status("Free-form line created.");return;
- }
- drawing=null;render()
+  if(!drawing) return;
+
+  const currentPoint=canvasPoint(ev.clientX,ev.clientY);
+  if(drawing.points.length===0 ||
+     Math.hypot(
+       currentPoint[0]-drawing.points[drawing.points.length-1][0],
+       currentPoint[1]-drawing.points[drawing.points.length-1][1]
+     ) > 1){
+    drawing.points.push(currentPoint);
+  }
+
+  const pts=normalizeFreeformPoints(drawing.points);
+  const hit=objectAt(ev.clientX,ev.clientY);
+
+  // Connector mode: if it started on a node and ended over another node,
+  // create a real edge and snap its final point to the target port.
+  if(drawing.mode==="connector" && drawing.source && hit && hit.id!==drawing.source.id){
+    commit();
+
+    const p=currentPoint;
+    const toPort=nearestPort(hit,p[0],p[1]);
+    const targetPoint=portPoint(hit,toPort);
+
+    let pathPoints=pts.slice();
+    if(pathPoints.length<2){
+      pathPoints=[portPoint(drawing.source,drawing.sourcePort),targetPoint];
+    }else{
+      pathPoints[0]=portPoint(drawing.source,drawing.sourcePort);
+      pathPoints[pathPoints.length-1]=targetPoint;
+    }
+
+    const e={
+      id:uid(),
+      from:drawing.source.id,
+      to:hit.id,
+      fromPort:drawing.sourcePort,
+      toPort,
+      type:connector,
+      style:lineStyle,
+      width:lineWidth(),
+      color:lineColor(),
+      startMarker:startMarker(),
+      endMarker:endMarker(),
+      label:$("edgeLabel").value.trim(),
+      waves:3
+    };
+
+    if(e.type==="curved"){
+      const a=pathPoints[0], b=pathPoints[pathPoints.length-1];
+      e.controls=[
+        [a[0]+(b[0]-a[0])*.35,a[1]],
+        [a[0]+(b[0]-a[0])*.65,b[1]]
+      ];
+    }
+
+    if(e.type==="elbow"){
+      const a=pathPoints[0], b=pathPoints[pathPoints.length-1];
+      e.midX=(a[0]+b[0])/2;
+    }
+
+    if(e.type==="freeform"){
+      e.points=pathPoints;
+    }
+
+    model.edges.push(e);
+    selected.clear();
+    selectedEdge=e.id;
+    drawing=null;
+    try{canvas.releasePointerCapture?.(ev.pointerId)}catch{}
+    render();
+    status("Connector created. Select it to edit style and shape.");
+    return;
+  }
+
+  // Draw/free-form mode: create a standalone smooth path.
+  if(drawing.mode==="draw" && pts.length>=2){
+    commit();
+
+    const e={
+      id:uid(),
+      from:null,
+      to:null,
+      fromPort:null,
+      toPort:null,
+      type:"freeform",
+      style:lineStyle,
+      width:lineWidth(),
+      color:lineColor(),
+      startMarker:startMarker(),
+      endMarker:endMarker(),
+      label:"",
+      points:pts
+    };
+
+    model.edges.push(e);
+    selectedEdge=e.id;
+    drawing=null;
+    try{canvas.releasePointerCapture?.(ev.pointerId)}catch{}
+    render();
+    status("Free-form drawing created. Select it to edit.");
+    return;
+  }
+
+  drawing=null;
+  try{canvas.releasePointerCapture?.(ev.pointerId)}catch{}
+  renderEdges();
 }
 function lineWidth(){return Math.max(1,Math.min(12,+$("lineWidth").value||2))}
 function lineColor(){return $("lineColor").value||"#52627a"}
@@ -312,10 +485,14 @@ edgesEl.addEventListener("pointerdown",ev=>{
 });
 document.addEventListener("pointermove",ev=>{
  if(drawing){
+   if(drawing.pointerId!=null && ev.pointerId!==drawing.pointerId) return;
    const p=canvasPoint(ev.clientX,ev.clientY);
    const last=drawing.points[drawing.points.length-1];
-   if(!last||Math.hypot(p[0]-last[0],p[1]-last[1])>4)drawing.points.push(p);
-   renderEdges();return
+   if(!last || Math.hypot(p[0]-last[0],p[1]-last[1])>2.5){
+     drawing.points.push(p);
+     renderEdges();
+   }
+   return;
  }
  if(edgeDrag){moveEdgeControl(ev);return}
  if(drag)moveDrag(ev)
@@ -329,8 +506,11 @@ document.addEventListener("pointerup",ev=>{
 canvas.addEventListener("pointerdown",ev=>{
  if(ev.button!==0)return;
  if(ev.target.closest(".node")||ev.target.closest(".edge"))return;
- if(tool==="connector"){beginFreeDraw(ev);return}
- if(tool==="draw"){beginFreeDraw(ev);return}
+ if(tool==="connector"){
+   status("Connect: start on a component or its port, then drag to another component.");
+   return;
+ }
+ if(tool==="draw"){beginFreeDraw(ev,"draw");return}
  const p=canvasPoint(ev.clientX,ev.clientY);
  if(tool==="text"){commit();addItem("text",p[0],p[1]);setTool("select");return}
  if(tool==="sticky"){commit();addItem("sticky",p[0],p[1]);setTool("select");return}
