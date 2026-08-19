@@ -234,3 +234,155 @@ footer{height:31px;padding:7px 18px;background:#fff;border-top:1px solid var(--l
   align-items:center;
   justify-content:center;
 }
+
+/* =========================================================
+   LIBRARY LAYOUT + SVG ICON FIXES
+   ========================================================= */
+/* The library root must be a vertical list of categories.  The old
+   .palette grid was also applying to the category wrappers themselves,
+   which caused category headers to appear side-by-side and squeezed
+   every component into 4+ narrow columns. */
+#palette.palette {
+  display: block;
+  width: 100%;
+  margin: 8px 0 0;
+}
+
+.library-category {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+}
+
+.library-category-title {
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.palette-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  width: 100%;
+  margin: 0 0 15px;
+}
+
+.palette-category-grid .palette-item {
+  width: 100%;
+  min-width: 0;
+  min-height: 82px;
+  padding: 9px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.palette-category-grid .palette-icon {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  margin: 0 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palette-category-grid .palette-label {
+  display: -webkit-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 11px;
+  line-height: 1.2;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Make every SVG primitive inherit the icon treatment.  Several icons use
+   shapes beyond path/circle/rect (and this also protects future icons). */
+.catalog-svg,
+.catalog-svg * {
+  box-sizing: border-box;
+}
+
+.catalog-svg {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: block;
+  overflow: visible;
+}
+
+.catalog-svg path,
+.catalog-svg circle,
+.catalog-svg rect,
+.catalog-svg ellipse,
+.catalog-svg line,
+.catalog-svg polyline,
+.catalog-svg polygon {
+  fill: none;
+  stroke: var(--icon-color, #52627a);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.catalog-svg [fill] {
+  fill: none;
+}
+
+.palette-item:hover .catalog-svg path,
+.palette-item:hover .catalog-svg circle,
+.palette-item:hover .catalog-svg rect,
+.palette-item:hover .catalog-svg ellipse,
+.palette-item:hover .catalog-svg line,
+.palette-item:hover .catalog-svg polyline,
+.palette-item:hover .catalog-svg polygon {
+  stroke: var(--brand);
+}
+
+/* A few intentionally filled vendor marks are rendered with CSS instead of
+   relying on the browser's default SVG fill behavior. */
+.catalog-svg.vendor-mark {
+  stroke: none;
+}
+
+.catalog-svg.vendor-mark * {
+  stroke: none;
+  fill: var(--icon-color, #52627a);
+}
+
+/* Keep the sidebar usable with a large catalog. */
+.palette-panel {
+  min-width: 0;
+}
+
+@media (min-width: 1201px) {
+  .workspace {
+    grid-template-columns: 285px minmax(500px, 1fr) 285px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .workspace {
+    grid-template-columns: 270px minmax(450px, 1fr) 250px;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 250px minmax(420px, 1fr);
+  }
+  .inspector-panel {
+    display: none;
+  }
+}
