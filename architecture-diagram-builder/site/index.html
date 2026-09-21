@@ -44,6 +44,13 @@
     </section>
 
     <section class="sidebar-section">
+      <h2>My custom icons</h2>
+      <p class="hint">Upload SVG, PNG, or JPG once, then drag it into any diagram. Icons stay in this browser.</p>
+      <label class="button file-button">Add icon<input id="customIconInput" type="file" accept="image/svg+xml,image/png,image/jpeg" multiple></label>
+      <div id="customIcons" class="custom-icons"></div>
+    </section>
+
+    <section class="sidebar-section">
       <h2>Architecture Library</h2>
       <input id="componentSearch" class="search" placeholder="Search components...">
       <p class="hint">Drag or click an item to add it.</p>
@@ -79,6 +86,7 @@
       <button class="button" id="impactMode">Impact</button>
       <button class="button" id="autoLayout">Auto layout</button>
       <button class="button" id="validateDiagram">Validate</button>
+      <label>Layer<select id="activeLayer"><option value="Architecture">Architecture</option><option value="Network">Network</option><option value="Security">Security</option><option value="Data">Data</option><option value="Observability">Observability</option></select></label>
       <button class="button" id="duplicateSelected">Duplicate</button>
       <button class="button danger" id="deleteSelected">Delete</button>
     </div>
@@ -150,6 +158,7 @@
         <label>Border<input id="nodeStroke" type="color" value="#64748b"></label>
       </div>
       <label>Fill<input id="nodeFill" type="color" value="#ffffff"></label>
+      <label>Layer<select id="nodeLayer"><option>Architecture</option><option>Network</option><option>Security</option><option>Data</option><option>Observability</option></select></label>
       <button type="button" class="button" id="editTextButton">Edit text / label</button>
     </form>
 
@@ -173,4 +182,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
