@@ -925,3 +925,4 @@ renderPalette();
 render();
 status("Ready. Drag or click components. Use Connect for real node-to-node arrows.");
 })();
+
