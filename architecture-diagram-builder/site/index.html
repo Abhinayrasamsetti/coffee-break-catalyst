@@ -25,8 +25,30 @@
   </div>
 </header>
 
+<nav class="canvas-dock" aria-label="Canvas tools">
+  <button class="dock-button active" data-tool="select" title="Select">↖</button>
+  <button class="dock-button" data-tool="connector" title="Connect components">↗</button>
+  <button class="dock-button" data-tool="sticky" title="Sticky note">▱</button>
+  <button class="dock-button" data-tool="text" title="Text">T</button>
+  <button class="dock-button" data-tool="draw" title="Draw">✎</button>
+  <button class="dock-button" data-tool="image" title="Upload image">▧</button>
+  <span class="dock-divider"></span>
+  <button class="dock-button" id="libraryToggle" title="Open component library">⊞</button>
+  <button class="dock-button" id="inspectorToggle" title="Open inspector">☷</button>
+</nav>
+<section id="shortcutHelp" class="shortcut-popover" hidden aria-label="Keyboard shortcuts">
+  <div class="shortcut-title"><strong>Keyboard shortcuts</strong><button id="shortcutClose" class="drawer-close">×</button></div>
+  <div><kbd>1</kbd> Select <kbd>2</kbd> Connect <kbd>3</kbd> Sticky note</div>
+  <div><kbd>T</kbd> Text <kbd>D</kbd> Draw <kbd>G</kbd> Pan</div>
+  <div><kbd>Shift L</kbd> Library <kbd>Shift I</kbd> Inspector</div>
+  <div><kbd>F</kbd> Fit canvas <kbd>Esc</kbd> Clear selection</div>
+  <div><kbd>Ctrl Z</kbd> Undo <kbd>Ctrl Y</kbd> Redo <kbd>Ctrl D</kbd> Duplicate</div>
+  <div><kbd>Ctrl S</kbd> Save .arch <kbd>Del</kbd> Delete</div>
+</section>
+
 <main class="workspace">
-  <aside class="sidebar palette-panel">
+  <aside class="sidebar palette-panel" id="libraryPanel">
+    <div class="drawer-heading"><strong>Component library</strong><button class="drawer-close" id="libraryClose" title="Close library">×</button></div>
     <section class="sidebar-section">
       <h2>Tools</h2>
       <div class="tool-grid">
@@ -41,13 +63,6 @@
         <button class="tool-button" data-tool="draw">✎ Draw</button>
       </div>
       <input id="imageInput" type="file" accept="image/*" hidden>
-    </section>
-
-    <section class="sidebar-section">
-      <h2>My custom icons</h2>
-      <p class="hint">Upload SVG, PNG, or JPG once, then drag it into any diagram. Icons stay in this browser.</p>
-      <label class="button file-button">Add icon<input id="customIconInput" type="file" accept="image/svg+xml,image/png,image/jpeg" multiple></label>
-      <div id="customIcons" class="custom-icons"></div>
     </section>
 
     <section class="sidebar-section">
@@ -137,8 +152,8 @@
     <div class="status" id="status">Ready.</div>
   </section>
 
-  <aside class="sidebar inspector-panel">
-    <h2>Inspector</h2>
+  <aside class="sidebar inspector-panel" id="inspectorPanel">
+    <div class="drawer-heading"><strong>Inspector</strong><button class="drawer-close" id="inspectorClose" title="Close inspector">×</button></div>
     <div id="inspectorEmpty" class="hint">Select a component or arrow to edit it.</div>
 
     <form id="inspector" hidden>
