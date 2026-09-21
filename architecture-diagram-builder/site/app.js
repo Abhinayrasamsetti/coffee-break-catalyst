@@ -197,7 +197,6 @@ function iconSvg(kind,id=""){
 function libEntrySafe(t){ return CATALOG.find(x=>x[0]===t)||null; }
 
 let model={version:5,name:"Untitled architecture",items:[],edges:[]};
-let customIcons=JSON.parse(localStorage.getItem("architecture-custom-icons")||"[]");
 let selected=new Set(), selectedEdge=null, tool="select", connector="straight", lineStyle="solid";
 let drawing=null, drag=null, edgeDrag=null, zoom=1, impact=false, undoStack=[], redoStack=[];
 
@@ -746,31 +745,6 @@ canvas.addEventListener("drop",e=>{
  const p=canvasPoint(e.clientX,e.clientY);commit();addItem("node",p[0]-75,p[1]-38,{type,label:libName(type)});status(`${libName(type)} added.`)
 });
 
-/* ---------- custom icon library (browser-local, export-safe data URIs) ---------- */
-function renderCustomIcons(){
- const host=$("customIcons");if(!host)return;
- host.innerHTML=customIcons.map(icon=>`<button class="custom-icon" draggable="true" data-custom-icon="${esc(icon.id)}" title="${esc(icon.name)}"><img src="${esc(icon.src)}" alt=""><span>${esc(icon.name)}</span></button>`).join("")||'<p class="hint">No custom icons yet.</p>';
- host.querySelectorAll(".custom-icon").forEach(b=>{
-   const icon=customIcons.find(x=>x.id===b.dataset.customIcon);
-   b.addEventListener("click",()=>addCustomIcon(icon));
-   b.addEventListener("dragstart",e=>e.dataTransfer.setData("application/x-custom-icon",icon.id));
- });
-}
-function addCustomIcon(icon,x,y){
- if(!icon)return;
- const r=canvas.getBoundingClientRect(),p=x==null?canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2):[x,y];
- commit();addItem("image",p[0]-70,p[1]-55,{label:icon.name,src:icon.src,width:140,height:110});status(`${icon.name} added from My custom icons.`);
-}
-$("customIconInput")?.addEventListener("change",ev=>{
- [...(ev.target.files||[])].forEach(file=>{
-   const reader=new FileReader();reader.onload=()=>{customIcons.push({id:uid(),name:file.name.replace(/\.[^.]+$/,"")||"Custom icon",src:reader.result});localStorage.setItem("architecture-custom-icons",JSON.stringify(customIcons));renderCustomIcons();status(`${file.name} saved in My custom icons.`)};reader.readAsDataURL(file);
- });ev.target.value="";
-});
-canvas.addEventListener("drop",e=>{
- const iconId=e.dataTransfer.getData("application/x-custom-icon");if(!iconId)return;
- e.preventDefault();const p=canvasPoint(e.clientX,e.clientY);addCustomIcon(customIcons.find(x=>x.id===iconId),p[0],p[1]);
-});
-
 /* ---------- shapes / images ---------- */
 document.querySelectorAll("[data-shape]").forEach(b=>b.addEventListener("click",()=>{
  const r=canvas.getBoundingClientRect(),p=canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2);
@@ -894,6 +868,22 @@ document.addEventListener("keydown",ev=>{
  else if(ev.key==="Delete"||ev.key==="Backspace"){if(document.activeElement.tagName==="INPUT"||document.activeElement.tagName==="TEXTAREA")return;ev.preventDefault();deleteSelected()}
 });
 
+function shortcutHelp(show){$("shortcutHelp").hidden=!show}
+$("shortcutClose").onclick=()=>shortcutHelp(false);
+document.addEventListener("keydown",ev=>{
+ const editable=["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName);
+ if(editable)return;
+ const key=ev.key.toLowerCase(), mod=ev.ctrlKey||ev.metaKey;
+ if(mod&&key==="s"){ev.preventDefault();$("saveDiagram").click();return}
+ if(ev.shiftKey&&key==="l"){ev.preventDefault();$("libraryPanel").classList.remove("is-collapsed");return}
+ if(ev.shiftKey&&key==="i"){ev.preventDefault();$("inspectorPanel").classList.remove("is-collapsed");return}
+ if(ev.key==="?"){ev.preventDefault();shortcutHelp($("shortcutHelp").hidden);return}
+ if(ev.key==="Escape"){shortcutHelp(false);clearSelection();render();return}
+ const tools={"1":"select","2":"connector","3":"sticky","t":"text","d":"draw","g":"pan"};
+ if(!mod&&tools[key]){ev.preventDefault();setTool(tools[key]);return}
+ if(!mod&&key==="f"){ev.preventDefault();$("fitView").click()}
+});
+
 /* ---------- templates ---------- */
 function loadTemplate(type){
  commit();model={version:4,name:type==="aiops"?"AIOps Control Center":type==="aks"?"AKS Application Platform":"Azure Landing Zone",items:[],edges:[]};
@@ -949,8 +939,14 @@ $("exportPng").onclick=()=>{
 };
 
 /* ---------- init ---------- */
+function toggleDrawer(id){$(id).classList.toggle("is-collapsed")}
+$("libraryToggle").onclick=()=>toggleDrawer("libraryPanel");
+$("inspectorToggle").onclick=()=>toggleDrawer("inspectorPanel");
+$("libraryClose").onclick=()=>$("libraryPanel").classList.add("is-collapsed");
+$("inspectorClose").onclick=()=>$("inspectorPanel").classList.add("is-collapsed");
+$("libraryPanel").classList.add("is-collapsed");
+$("inspectorPanel").classList.add("is-collapsed");
 renderPalette();
-renderCustomIcons();
 render();
 status("Ready. Drag or click components. Use Connect for real node-to-node arrows.");
 })();
