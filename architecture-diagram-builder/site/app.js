@@ -196,7 +196,8 @@ function iconSvg(kind,id=""){
 }
 function libEntrySafe(t){ return CATALOG.find(x=>x[0]===t)||null; }
 
-let model={version:4,name:"Untitled architecture",items:[],edges:[]};
+let model={version:5,name:"Untitled architecture",items:[],edges:[]};
+let customIcons=JSON.parse(localStorage.getItem("architecture-custom-icons")||"[]");
 let selected=new Set(), selectedEdge=null, tool="select", connector="straight", lineStyle="solid";
 let drawing=null, drag=null, edgeDrag=null, zoom=1, impact=false, undoStack=[], redoStack=[];
 
@@ -239,7 +240,7 @@ function addItem(kind,x,y,o={}){
    label:o.label||"Item",type:o.type||"app",environment:o.environment||"Production",
    owner:o.owner||"",description:o.description||"",rotation:o.rotation||0,
    fill:o.fill||"#ffffff",stroke:o.stroke||"#64748b",text:o.text||"",src:o.src||"",
-   shape:o.shape||null
+   shape:o.shape||null,layer:o.layer||$("activeLayer")?.value||"Architecture"
  };
  if(kind==="node") n.label=o.label||libName(n.type);
  if(kind==="shape"){n.width=o.width||170;n.height=o.height||100;n.shape=o.shape||"rectangle";n.label=o.label||n.shape[0].toUpperCase()+n.shape.slice(1)}
@@ -423,6 +424,7 @@ function renderInspector(){
    $("nodeEnvironment").value=n.environment||"Production";$("nodeOwner").value=n.owner||"";
    $("nodeDescription").value=n.description||"";$("nodeWidth").value=Math.round(n.width);$("nodeHeight").value=Math.round(n.height);
    $("nodeRotation").value=n.rotation||0;$("nodeFill").value=n.fill?.startsWith("#")?n.fill:"#ffffff";$("nodeStroke").value=n.stroke?.startsWith("#")?n.stroke:"#64748b";
+   $("nodeLayer").value=n.layer||"Architecture";
  }
  if(selectedEdge){
    const e=getEdge(selectedEdge);
@@ -744,6 +746,31 @@ canvas.addEventListener("drop",e=>{
  const p=canvasPoint(e.clientX,e.clientY);commit();addItem("node",p[0]-75,p[1]-38,{type,label:libName(type)});status(`${libName(type)} added.`)
 });
 
+/* ---------- custom icon library (browser-local, export-safe data URIs) ---------- */
+function renderCustomIcons(){
+ const host=$("customIcons");if(!host)return;
+ host.innerHTML=customIcons.map(icon=>`<button class="custom-icon" draggable="true" data-custom-icon="${esc(icon.id)}" title="${esc(icon.name)}"><img src="${esc(icon.src)}" alt=""><span>${esc(icon.name)}</span></button>`).join("")||'<p class="hint">No custom icons yet.</p>';
+ host.querySelectorAll(".custom-icon").forEach(b=>{
+   const icon=customIcons.find(x=>x.id===b.dataset.customIcon);
+   b.addEventListener("click",()=>addCustomIcon(icon));
+   b.addEventListener("dragstart",e=>e.dataTransfer.setData("application/x-custom-icon",icon.id));
+ });
+}
+function addCustomIcon(icon,x,y){
+ if(!icon)return;
+ const r=canvas.getBoundingClientRect(),p=x==null?canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2):[x,y];
+ commit();addItem("image",p[0]-70,p[1]-55,{label:icon.name,src:icon.src,width:140,height:110});status(`${icon.name} added from My custom icons.`);
+}
+$("customIconInput")?.addEventListener("change",ev=>{
+ [...(ev.target.files||[])].forEach(file=>{
+   const reader=new FileReader();reader.onload=()=>{customIcons.push({id:uid(),name:file.name.replace(/\.[^.]+$/,"")||"Custom icon",src:reader.result});localStorage.setItem("architecture-custom-icons",JSON.stringify(customIcons));renderCustomIcons();status(`${file.name} saved in My custom icons.`)};reader.readAsDataURL(file);
+ });ev.target.value="";
+});
+canvas.addEventListener("drop",e=>{
+ const iconId=e.dataTransfer.getData("application/x-custom-icon");if(!iconId)return;
+ e.preventDefault();const p=canvasPoint(e.clientX,e.clientY);addCustomIcon(customIcons.find(x=>x.id===iconId),p[0],p[1]);
+});
+
 /* ---------- shapes / images ---------- */
 document.querySelectorAll("[data-shape]").forEach(b=>b.addEventListener("click",()=>{
  const r=canvas.getBoundingClientRect(),p=canvasPoint(r.left+canvas.clientWidth/2,r.top+canvas.clientHeight/2);
@@ -828,7 +855,7 @@ $("autoLayout").onclick=()=>{
 };
 
 /* ---------- inspector ---------- */
-["nodeLabel","nodeEnvironment","nodeOwner","nodeDescription","nodeWidth","nodeHeight","nodeRotation","nodeFill","nodeStroke"].forEach(id=>{
+["nodeLabel","nodeEnvironment","nodeOwner","nodeDescription","nodeWidth","nodeHeight","nodeRotation","nodeFill","nodeStroke","nodeLayer"].forEach(id=>{
  $(id).addEventListener("change",()=>{
    if(selected.size!==1)return;const n=getItem([...selected][0]);if(!n)return;commit();
    if(id==="nodeLabel")n.label=$(id).value;
@@ -840,6 +867,7 @@ $("autoLayout").onclick=()=>{
    else if(id==="nodeRotation")n.rotation=+$("nodeRotation").value||0;
    else if(id==="nodeFill")n.fill=$(id).value;
    else if(id==="nodeStroke")n.stroke=$(id).value;
+   else if(id==="nodeLayer")n.layer=$(id).value;
    render()
  })
 });
@@ -906,7 +934,7 @@ function exportSvgString(){
  const parts=[`<svg xmlns="http://www.w3.org/2000/svg" width="3200" height="2200" viewBox="0 0 3200 2200">`,`<rect width="100%" height="100%" fill="#eef3fa"/>`];
  model.edges.forEach(e=>{const d=edgePath(e);if(!d)return;parts.push(`<path d="${d}" fill="none" stroke="${e.color||"#52627a"}" stroke-width="${e.width||2}" ${e.style==="dashed"?'stroke-dasharray="8 5"':e.style==="dotted"?'stroke-dasharray="2 5"':""}/>`);});
  model.items.forEach(n=>{
-   if(n.kind==="image")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="8" fill="#fff" stroke="${n.stroke||"#64748b"}"/>`);
+   if(n.kind==="image")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="8" fill="#fff" stroke="${n.stroke||"#64748b"}"/><image href="${esc(n.src)}" x="${n.x+8}" y="${n.y+8}" width="${Math.max(1,n.width-16)}" height="${Math.max(1,n.height-34)}" preserveAspectRatio="xMidYMid meet"/><text x="${n.x+8}" y="${n.y+n.height-10}" font-family="Arial" font-size="12">${esc(n.label)}</text>`);
    else if(n.kind==="shape")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="${n.shape==="ellipse"?n.height/2:10}" fill="${n.fill||"#fff"}" stroke="${n.stroke||"#64748b"}"/>`);
    else if(n.kind==="node")parts.push(`<rect x="${n.x}" y="${n.y}" width="${n.width}" height="${n.height}" rx="8" fill="${n.fill||"#fff"}" stroke="${n.stroke||"#64748b"}"/><text x="${n.x+10}" y="${n.y+35}" font-family="Arial" font-size="16" font-weight="700">${esc(n.label)}</text>`);
    else if(n.kind==="text")parts.push(`<text x="${n.x}" y="${n.y+24}" font-family="Arial" font-size="16">${esc(n.text)}</text>`);
@@ -922,7 +950,7 @@ $("exportPng").onclick=()=>{
 
 /* ---------- init ---------- */
 renderPalette();
+renderCustomIcons();
 render();
 status("Ready. Drag or click components. Use Connect for real node-to-node arrows.");
 })();
-
